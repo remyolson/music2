@@ -9,6 +9,8 @@ const NOTE_HEIGHT = 20;
 const PIXELS_PER_BEAT = 100;
 const PIANO_ROLL_HEIGHT = 500;
 const MARGIN = 20;
+const FIXED_BARS = 16;
+const BEATS_PER_BAR = 4;
 
 export function initialize() {
   svg = document.getElementById('piano-roll');
@@ -24,12 +26,13 @@ export function update(musicData) {
   if (!musicData) return;
   
   const loopEnd = getLoopEnd(musicData);
-  const svgWidth = (loopEnd * PIXELS_PER_BEAT) + (MARGIN * 2);
+  const fixedBeats = FIXED_BARS * BEATS_PER_BAR;
+  const svgWidth = (fixedBeats * PIXELS_PER_BEAT) + (MARGIN * 2);
   
   svg.setAttribute('viewBox', `0 0 ${svgWidth} ${PIANO_ROLL_HEIGHT}`);
   svg.setAttribute('preserveAspectRatio', 'xMinYMin meet');
   
-  drawGrid(svgWidth, loopEnd);
+  drawGrid(svgWidth, fixedBeats);
   
   drawTracks(musicData);
   
@@ -78,9 +81,27 @@ function drawTracks(musicData) {
       rect.setAttribute('y', yOffset);
       rect.setAttribute('width', note.duration * PIXELS_PER_BEAT);
       rect.setAttribute('height', NOTE_HEIGHT);
-      rect.setAttribute('fill', track.instrument === 'synth_lead' ? '#00ff88' : '#ff8800');
+      const instrumentColors = {
+        synth_lead: '#00ff88',
+        synth_bass: '#0088ff',
+        piano: '#ff00ff',
+        strings: '#ffff00',
+        brass: '#ff0088',
+        drums_kit: '#ff8800'
+      };
+      rect.setAttribute('fill', instrumentColors[track.instrument] || '#888888');
       rect.setAttribute('rx', 2);
       rect.setAttribute('ry', 2);
+      
+      if (note.effect) {
+        rect.setAttribute('stroke', '#ffffff');
+        rect.setAttribute('stroke-width', '2');
+        rect.setAttribute('stroke-dasharray', '3,2');
+      }
+      
+      if (note.volume !== undefined && note.volume !== 0.7) {
+        rect.setAttribute('opacity', 0.3 + (note.volume * 0.7));
+      }
       
       const noteLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       noteLabel.setAttribute('x', MARGIN + (note.time * PIXELS_PER_BEAT) + 5);
@@ -130,11 +151,23 @@ function startAnimation() {
     if (!playhead || !currentData) return;
     
     const transport = getTransport();
-    const position = transport.seconds;
-    const x = MARGIN + (position * PIXELS_PER_BEAT);
+    const positionInBeats = transport.position;
+    const [bars, beats, sixteenths] = positionInBeats.split(':').map(Number);
+    const totalBeats = (bars * 4) + beats + (sixteenths / 4);
     
-    playhead.setAttribute('x1', x);
-    playhead.setAttribute('x2', x);
+    const loopEnd = getLoopEnd(currentData);
+    const fixedBeats = FIXED_BARS * BEATS_PER_BAR;
+    
+    const loopedPosition = loopEnd > 0 ? totalBeats % loopEnd : totalBeats;
+    const x = MARGIN + (loopedPosition * PIXELS_PER_BEAT);
+    
+    if (x <= MARGIN + (fixedBeats * PIXELS_PER_BEAT)) {
+      playhead.setAttribute('x1', x);
+      playhead.setAttribute('x2', x);
+      playhead.style.display = 'block';
+    } else {
+      playhead.style.display = 'none';
+    }
     
     animationId = requestAnimationFrame(animate);
   }

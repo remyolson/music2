@@ -23,6 +23,30 @@ export function initialize() {
     debounceTimer = setTimeout(handleInput, 300);
   });
 
+  jsonEditor.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+    
+    try {
+      const parsed = JSON.parse(pastedText);
+      const formatted = JSON.stringify(parsed, null, 2);
+      
+      const start = jsonEditor.selectionStart;
+      const end = jsonEditor.selectionEnd;
+      const value = jsonEditor.value;
+      
+      jsonEditor.value = value.substring(0, start) + formatted + value.substring(end);
+      
+      const newCursorPos = start + formatted.length;
+      jsonEditor.setSelectionRange(newCursorPos, newCursorPos);
+      
+      updateLineNumbers();
+      handleInput();
+    } catch (error) {
+      document.execCommand('insertText', false, pastedText);
+    }
+  });
+
   jsonEditor.addEventListener('scroll', () => {
     lineNumbers.scrollTop = jsonEditor.scrollTop;
   });
