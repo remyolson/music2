@@ -1,0 +1,183 @@
+:root {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2a2a2a;
+  --bg-tertiary: #3a3a3a;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --accent: #00ff88;
+  --error: #ff4444;
+  --border: #404040;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  height: 100vh;
+  overflow: hidden;
+}
+
+#app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  background-color: var(--bg-secondary);
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--border);
+}
+
+header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+header p {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.editor-panel {
+  border-right: 1px solid var(--border);
+}
+
+.panel-header {
+  background-color: var(--bg-secondary);
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-header h2 {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.json-editor {
+  flex: 1;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border: none;
+  padding: 1rem;
+  font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+  overflow: auto;
+}
+
+/* Line Numbers */
+.json-editor-container {
+  flex: 1;
+  display: flex;
+  background-color: var(--bg-primary);
+  overflow: hidden;
+}
+
+.line-numbers {
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+  padding: 1rem 0.5rem;
+  text-align: right;
+  user-select: none;
+  font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  min-width: 3rem;
+  overflow: hidden;
+  white-space: pre;
+}
+
+.visualizer {
+  flex: 1;
+  background-color: var(--bg-primary);
+  overflow: auto;
+}
+
+#piano-roll {
+  min-height: 100%;
+  background-color: var(--bg-primary);
+}
+
+.controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.control-button,
+.copy-button {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.control-button:hover,
+.copy-button:hover {
+  background-color: var(--accent);
+  color: var(--bg-primary);
+  border-color: var(--accent);
+}
+
+.control-button:active,
+.copy-button:active {
+  transform: scale(0.95);
+}
+
+.error-panel {
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  min-height: 100px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 1rem;
+  font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+  font-size: 0.75rem;
+}
+
+.error-panel:empty {
+  display: none;
+}
+
+.error-message {
+  color: var(--error);
+  margin-bottom: 0.5rem;
+}
+
+.success-message {
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+
+footer {
+  flex-shrink: 0;
+}

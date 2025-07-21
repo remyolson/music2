@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSON Music Codec</title>
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+
+<body>
+  <div id="app">
+    <header>
+      <h1>JSON Music Codec</h1>
+      <p>Compose music with human-readable JSON</p>
+    </header>
+
+    <main>
+      <div class="panel editor-panel">
+        <div class="panel-header">
+          <h2>JSON Editor</h2>
+          <button id="copy-json" class="copy-button">Copy</button>
+          <button id="copy-ai" class="copy-button">Copy for AI</button>
+        </div>
+        <div class="json-editor-container">
+          <div id="line-numbers" class="line-numbers"></div>
+          <textarea id="json-editor" class="json-editor" spellcheck="false"></textarea>
+        </div>
+      </div>
+
+      <div class="panel visualizer-panel">
+        <div class="panel-header">
+          <h2>Piano Roll</h2>
+          <div class="controls">
+            <button id="play-button" class="control-button">▶ Play</button>
+            <button id="stop-button" class="control-button">■ Stop</button>
+          </div>
+        </div>
+        <div id="visualizer" class="visualizer">
+          <svg id="piano-roll" width="100%" height="100%"></svg>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div id="error-panel" class="error-panel"></div>
+    </footer>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
