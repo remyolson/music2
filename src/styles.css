@@ -35,6 +35,16 @@ header {
   border-bottom: 1px solid var(--border);
 }
 
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-text {
+  flex: 1;
+}
+
 header h1 {
   font-size: 1.5rem;
   font-weight: 600;
@@ -44,6 +54,18 @@ header h1 {
 header p {
   color: var(--text-secondary);
   font-size: 0.875rem;
+}
+
+.audio-visualizer {
+  width: 300px;
+  height: 60px;
+  margin-left: 2rem;
+}
+
+#audio-spectrum {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 main {
@@ -70,11 +92,13 @@ main {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
 }
 
 .panel-header h2 {
   font-size: 1rem;
   font-weight: 500;
+  margin-right: auto;
 }
 
 .json-editor {
@@ -127,6 +151,55 @@ main {
 .controls {
   display: flex;
   gap: 0.5rem;
+  align-items: center;
+}
+
+.track-count {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-left: auto;
+  margin-right: 1rem;
+}
+
+.zoom-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 1rem;
+  padding-left: 1rem;
+  border-left: 1px solid var(--border);
+}
+
+.zoom-control label {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+#zoom-slider {
+  width: 120px;
+  height: 4px;
+  background: var(--bg-secondary);
+  outline: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+#zoom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+#zoom-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
 }
 
 .control-button,
@@ -180,4 +253,45 @@ main {
 
 footer {
   flex-shrink: 0;
+}
+
+/* Track hover effects */
+.track-hover .track-bg {
+  fill: rgba(255, 255, 255, 0.05) !important;
+}
+
+.track-hover .note {
+  filter: brightness(1.2);
+}
+
+.track-hover text {
+  fill: var(--text-primary) !important;
+}
+
+/* Track interaction animations */
+.track {
+  transition: all 0.2s ease;
+}
+
+.track-bg {
+  transition: fill 0.2s ease;
+}
+
+.note {
+  transition: filter 0.2s ease;
+}
+
+/* Responsive design for audio visualizer */
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .audio-visualizer {
+    width: 100%;
+    height: 40px;
+    margin-left: 0;
+    margin-top: 1rem;
+  }
 }

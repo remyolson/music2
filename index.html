@@ -11,8 +11,15 @@
 <body>
   <div id="app">
     <header>
-      <h1>JSON Music Codec</h1>
-      <p>Compose music with human-readable JSON</p>
+      <div class="header-content">
+        <div class="header-text">
+          <h1>JSON Music Codec</h1>
+          <p>Compose music with human-readable JSON</p>
+        </div>
+        <div class="audio-visualizer">
+          <canvas id="audio-spectrum"></canvas>
+        </div>
+      </div>
     </header>
 
     <main>
@@ -31,9 +38,14 @@
       <div class="panel visualizer-panel">
         <div class="panel-header">
           <h2>Piano Roll</h2>
+          <span id="track-count" class="track-count">0 tracks</span>
           <div class="controls">
             <button id="play-button" class="control-button">▶ Play</button>
             <button id="stop-button" class="control-button">■ Stop</button>
+            <div class="zoom-control">
+              <label for="zoom-slider">Zoom:</label>
+              <input type="range" id="zoom-slider" min="0.5" max="5" step="0.1" value="2.5">
+            </div>
           </div>
         </div>
         <div id="visualizer" class="visualizer">

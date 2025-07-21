@@ -1,5 +1,6 @@
 import { initialize as initializeInput } from './inputHandler.js';
 import { initialize as initializeVisualizer, update as updateVisualizer } from './visualizer.js';
+import { init as initAudioVisualizer } from './audioVisualizer.js';
 import { subscribe } from './state.js';
 import { update as updateAudioEngine, play, stop } from './audioEngine.js';
 import { generateAIPrompt } from './musicConfig.js';
@@ -8,6 +9,12 @@ document.addEventListener('DOMContentLoaded', () => {
   console.log('JSON Music Codec - Initializing...');
 
   initializeVisualizer();
+  
+  // Initialize audio visualizer
+  const audioCanvas = document.getElementById('audio-spectrum');
+  if (audioCanvas) {
+    initAudioVisualizer(audioCanvas);
+  }
 
   subscribe((musicData) => {
     updateAudioEngine(musicData);
