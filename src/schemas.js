@@ -9,10 +9,10 @@ export const PitchNoteSchema = z.string()
       'C': 0, 'C#': 1, 'D': 2, 'D#': 3, 'E': 4, 'F': 5,
       'F#': 6, 'G': 7, 'G#': 8, 'A': 9, 'A#': 10, 'B': 11
     };
-    
+
     const noteName = note.slice(0, -1);
     const octave = parseInt(note.slice(-1));
-    
+
     return noteMap[noteName] + (octave * 12);
   });
 
@@ -22,7 +22,8 @@ export const NoteSchema = z.object({
   value: z.union([DrumNoteSchema, PitchNoteSchema]),
   volume: z.number().min(0).max(1).default(0.7),
   effect: z.enum(['reverb', 'delay', 'distortion', 'chorus', 'phaser']).optional(),
-  effectLevel: z.number().min(0).max(1).optional()
+  effectLevel: z.number().min(0).max(1).optional(),
+  repeat: z.number().int().min(2).optional()
 }).refine(data => {
   if (data.effect && !data.effectLevel) {
     data.effectLevel = 0.5;
@@ -54,13 +55,13 @@ export const TrackSchema = z.object({
   settings: TrackSettingsSchema
 }).refine((track) => {
   const melodicInstruments = ['synth_lead', 'synth_bass', 'piano', 'strings', 'brass'];
-  
+
   if (melodicInstruments.includes(track.instrument)) {
-    return track.notes.every(note => 
+    return track.notes.every(note =>
       typeof note.value === 'number'
     );
   } else if (track.instrument === 'drums_kit') {
-    return track.notes.every(note => 
+    return track.notes.every(note =>
       typeof note.value === 'string' && ['kick', 'snare'].includes(note.value)
     );
   }
@@ -159,17 +160,11 @@ export const defaultMusicData = {
       name: "Drums",
       instrument: "drums_kit",
       notes: [
-        { time: 0, duration: 0.1, value: "kick", volume: 1.0 },
-        { time: 0.5, duration: 0.1, value: "kick", volume: 0.7 },
+        { time: 0, duration: 0.5, value: "kick", volume: 1.0, repeat: 4 },
+        { time: 0.5, duration: 0.5, value: "kick", volume: 0.7, repeat: 4 },
         { time: 1, duration: 0.1, value: "snare", volume: 0.9 },
-        { time: 2, duration: 0.1, value: "kick", volume: 1.0 },
-        { time: 2.5, duration: 0.1, value: "kick", volume: 0.7 },
         { time: 3, duration: 0.1, value: "snare", volume: 0.9 },
-        { time: 4, duration: 0.1, value: "kick", volume: 1.0 },
-        { time: 4.5, duration: 0.1, value: "kick", volume: 0.7 },
         { time: 5, duration: 0.1, value: "snare", volume: 0.9, effect: "reverb", effectLevel: 0.3 },
-        { time: 6, duration: 0.1, value: "kick", volume: 1.0 },
-        { time: 6.5, duration: 0.1, value: "kick", volume: 0.7 },
         { time: 7, duration: 0.1, value: "snare", volume: 0.9, effect: "reverb", effectLevel: 0.3 }
       ]
     }

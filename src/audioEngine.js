@@ -5,6 +5,23 @@ let parts = [];
 let isPlaying = false;
 let effects = new Map();
 
+function expandNotesWithRepeat(notes) {
+  const expanded = [];
+  notes.forEach(note => {
+    if (note.repeat && note.repeat > 1) {
+      for (let i = 0; i < note.repeat; i++) {
+        expanded.push({
+          ...note,
+          time: note.time + (i * note.duration)
+        });
+      }
+    } else {
+      expanded.push(note);
+    }
+  });
+  return expanded;
+}
+
 const availableEffects = {
   reverb: () => new Tone.Reverb({ decay: 2.5, wet: 0.5 }),
   delay: () => new Tone.Delay({ delayTime: 0.25, feedback: 0.3, wet: 0.3 }),
@@ -15,21 +32,25 @@ const availableEffects = {
 
 export function update(musicData) {
   cleanup();
-  
+
   if (!musicData) return;
-  
+
   Tone.Transport.bpm.value = musicData.tempo;
-  
+
+  const secondsPerBeat = 60 / musicData.tempo;
+
   musicData.tracks.forEach(track => {
     const { instrument, effectChain } = createInstrumentWithEffects(track);
     instruments.set(track.name, { instrument, effectChain });
-    
+
+    const expandedNotes = expandNotesWithRepeat(track.notes);
+
     const part = new Tone.Part((time, note) => {
       const volume = note.volume !== undefined ? note.volume : 0.7;
       const velocity = volume;
-      
+
       let playInstrument = instrument;
-      
+
       if (note.effect && availableEffects[note.effect]) {
         const noteEffect = effects.get(`${track.name}-${note.effect}-${time}`);
         if (!noteEffect) {
@@ -41,24 +62,24 @@ export function update(musicData) {
           newEffect.toDestination();
         }
       }
-      
+
       if (track.instrument === 'drums_kit') {
         playInstrument[note.value].triggerAttackRelease(note.duration, time, velocity);
       } else {
         const frequency = Tone.Frequency(note.value, 'midi').toFrequency();
         playInstrument.triggerAttackRelease(frequency, note.duration, time, velocity);
       }
-    }, track.notes.map(note => ({
-      time: note.time,
-      duration: note.duration,
+    }, expandedNotes.map(note => ({
+      time: note.time * secondsPerBeat,
+      duration: note.duration * secondsPerBeat,
       value: note.value,
       volume: note.volume,
       effect: note.effect,
       effectLevel: note.effectLevel
     })));
-    
+
     part.loop = true;
-    part.loopEnd = getLoopEnd(musicData);
+    part.loopEnd = getLoopEnd(musicData) * secondsPerBeat;
     parts.push(part);
   });
 }
@@ -66,18 +87,20 @@ export function update(musicData) {
 function createInstrumentWithEffects(track) {
   const instrument = createInstrument(track.instrument, track.settings);
   const effectChain = [];
-  
+
   // Apply global effects from track settings first
   if (track.settings?.globalEffects) {
     track.settings.globalEffects.forEach(globalEffect => {
       if (availableEffects[globalEffect.type]) {
         const effect = availableEffects[globalEffect.type]();
-        effect.wet.value = globalEffect.level || 0.5;
+        if (effect.wet) {
+          effect.wet.value = globalEffect.level ?? 0.5;
+        }
         effectChain.push(effect);
       }
     });
   }
-  
+
   // Collect unique note-level effects (for backward compatibility)
   const trackEffects = new Set();
   track.notes.forEach(note => {
@@ -85,7 +108,7 @@ function createInstrumentWithEffects(track) {
       trackEffects.add(note.effect);
     }
   });
-  
+
   trackEffects.forEach(effectName => {
     // Skip if already added as global effect
     const isGlobal = track.settings?.globalEffects?.some(e => e.type === effectName);
@@ -94,7 +117,7 @@ function createInstrumentWithEffects(track) {
       effectChain.push(effect);
     }
   });
-  
+
   if (track.instrument === 'drums_kit') {
     if (effectChain.length > 0) {
       instrument.kick.chain(...effectChain, Tone.Destination);
@@ -110,7 +133,7 @@ function createInstrumentWithEffects(track) {
       instrument.toDestination();
     }
   }
-  
+
   return { instrument, effectChain };
 }
 
@@ -118,7 +141,7 @@ function createInstrument(type, settings) {
   const envelope = settings?.envelope || {};
   const noteTransition = settings?.noteTransition || 'normal';
   const portamentoTime = settings?.portamento || 0;
-  
+
   // Apply note transition presets
   const transitionPresets = {
     smooth: { attack: 0.05, release: 1.0 },
@@ -126,9 +149,9 @@ function createInstrument(type, settings) {
     staccato: { attack: 0.001, release: 0.05 },
     normal: {}
   };
-  
+
   const transitionSettings = transitionPresets[noteTransition] || {};
-  
+
   switch (type) {
     case 'synth_lead':
       return new Tone.Synth({
@@ -141,7 +164,7 @@ function createInstrument(type, settings) {
         },
         portamento: portamentoTime
       });
-      
+
     case 'synth_bass':
       return new Tone.MonoSynth({
         oscillator: { type: 'square' },
@@ -161,7 +184,7 @@ function createInstrument(type, settings) {
         },
         portamento: portamentoTime
       });
-      
+
     case 'piano':
       return new Tone.PolySynth(Tone.Synth, {
         oscillator: { type: 'fmsine' },
@@ -172,7 +195,7 @@ function createInstrument(type, settings) {
           release: envelope.release ?? transitionSettings.release ?? 1.2
         }
       });
-      
+
     case 'strings':
       return new Tone.PolySynth(Tone.Synth, {
         oscillator: { type: 'sawtooth' },
@@ -183,7 +206,7 @@ function createInstrument(type, settings) {
           release: envelope.release ?? transitionSettings.release ?? 1.5
         }
       });
-      
+
     case 'brass':
       return new Tone.MonoSynth({
         oscillator: { type: 'sawtooth' },
@@ -203,7 +226,7 @@ function createInstrument(type, settings) {
         },
         portamento: portamentoTime
       });
-      
+
     case 'drums_kit':
       return {
         kick: new Tone.MembraneSynth({
@@ -227,7 +250,7 @@ function createInstrument(type, settings) {
           }
         })
       };
-      
+
     default:
       return new Tone.Synth();
   }
@@ -236,7 +259,8 @@ function createInstrument(type, settings) {
 function getLoopEnd(musicData) {
   let maxTime = 0;
   musicData.tracks.forEach(track => {
-    track.notes.forEach(note => {
+    const notes = expandNotesWithRepeat(track.notes);
+    notes.forEach(note => {
       const endTime = note.time + note.duration;
       if (endTime > maxTime) maxTime = endTime;
     });
@@ -250,14 +274,14 @@ function cleanup() {
     part.dispose();
   });
   parts = [];
-  
+
   instruments.forEach(({ instrument, effectChain }) => {
     if (effectChain) {
       effectChain.forEach(effect => {
         if (effect.dispose) effect.dispose();
       });
     }
-    
+
     if (instrument.dispose) {
       instrument.dispose();
     } else if (typeof instrument === 'object') {
@@ -267,7 +291,7 @@ function cleanup() {
     }
   });
   instruments.clear();
-  
+
   effects.forEach(effect => {
     if (effect.dispose) effect.dispose();
   });
@@ -276,7 +300,7 @@ function cleanup() {
 
 export async function play() {
   if (isPlaying) return;
-  
+
   await Tone.start();
   parts.forEach(part => part.start(0));
   Tone.Transport.start();

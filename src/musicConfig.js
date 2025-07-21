@@ -87,6 +87,7 @@ Schema (all fields required unless marked optional):
           "volume": number     // Volume level 0-1 (default: 0.7)
           "effect": string     // Optional: effect name (see below)
           "effectLevel": number // Optional: effect intensity 0-1
+          "repeat": integer    // Optional: repeat count (2 or more) - automatically spaces notes by duration
         }
       ],
       "settings": {            // Optional: instrument-level settings
@@ -125,6 +126,7 @@ Formatting Rules:
 3. Do NOT wrap the JSON in Markdown code fences (triple backticks).
 4. Respond with the entire object each time (overwrite existing JSON).
 5. Notes can have individual volume (0-1) and optional effect with effectLevel.
+6. Use "repeat" field to condense repetitive patterns (e.g., drum beats) - a note with repeat:4 plays 4 times spaced by its duration.
 
 Instrument-Level Settings:
 • globalEffects: Apply effects to all notes in a track (more efficient than per-note)
@@ -189,10 +191,8 @@ Example (with new features):
       "name": "Drums",
       "instrument": "drums_kit",
       "notes": [
-        { "time": 0, "duration": 0.1, "value": "kick", "volume": 1.0 },
-        { "time": 0.5, "duration": 0.1, "value": "snare", "volume": 0.8 },
-        { "time": 1, "duration": 0.1, "value": "kick", "volume": 1.0 },
-        { "time": 1.5, "duration": 0.1, "value": "snare", "volume": 0.8 }
+        { "time": 0, "duration": 0.5, "value": "kick", "volume": 1.0, "repeat": 2 },
+        { "time": 0.5, "duration": 0.5, "value": "snare", "volume": 0.8, "repeat": 2 }
       ]
     }
   ]
