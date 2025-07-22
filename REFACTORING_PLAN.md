@@ -12,16 +12,21 @@
 - **Constants Extraction**: All constants moved to `src/audio/constants/`
 - **Effects Factory**: Created `EffectFactory.js` with all effect creation logic
 - **Instrument Factory**: Created `InstrumentFactory.js` with all instrument creation logic
+- **Live Input Module**: Created `LiveInput.js` with all live audio functionality
+- **Master Bus Module**: Created `MasterBus.js` with global audio routing
+- **audioEngine.js Refactoring**: Reduced from 1774 to 552 lines (69% reduction)
 
 ### 🚧 In Progress
-- Extracting live input logic from audioEngine.js
-- Extracting master bus logic to separate module
-- Applying DisposalRegistry pattern throughout
+- Applying DisposalRegistry pattern throughout codebase
+- Implementing comprehensive test coverage
+- Setting up TypeScript with JSDoc
 
 ### 📝 Next Steps
-- Complete audioEngine.js modularization (live input, master bus)
+- Apply DisposalRegistry pattern to all modules
 - Implement comprehensive test coverage
-- Apply memory safety patterns across codebase
+- Set up TypeScript with JSDoc
+- Implement lazy loading for instruments
+- Create performance benchmarks
 
 ## 🎯 Vision & Goals
 

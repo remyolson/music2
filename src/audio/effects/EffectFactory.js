@@ -10,6 +10,7 @@ import {
   HARMONIZER_DEFAULT_VOICE_LEVEL
 } from '../constants/index.js';
 import { SAFE_LIMITS } from '../constants/limits.js';
+import { DisposalRegistry } from '../../utils/DisposalRegistry.js';
 
 /**
  * Creates an effect with safety limits applied
@@ -74,6 +75,7 @@ export const availableEffects = {
 function createHarmonizer() {
   // Create a harmonizer with multiple pitch shifters
   const harmonizer = new Tone.Gain();
+  const registry = new DisposalRegistry('harmonizer');
 
   // Create multiple pitch shifters for different harmony voices
   const voices = [];
@@ -94,14 +96,21 @@ function createHarmonizer() {
     // Chain: input -> pitch shifter -> gain -> output
     voice.pitchShifter.connect(voice.gain);
     voices.push(voice);
+    
+    // Register components for disposal
+    registry.register(voice.pitchShifter);
+    registry.register(voice.gain);
   }
 
   // Dry signal path
   const dryGain = new Tone.Gain(1.0);
+  registry.register(dryGain);
 
   // Mix control
   const wetGain = new Tone.Gain(0.5);
   const outputGain = new Tone.Gain(1.0);
+  registry.register(wetGain);
+  registry.register(outputGain);
 
   // Connect dry path
   harmonizer.connect(dryGain);
@@ -162,13 +171,7 @@ function createHarmonizer() {
 
   // Add dispose method
   harmonizer.dispose = function() {
-    voices.forEach(voice => {
-      voice.pitchShifter.dispose();
-      voice.gain.dispose();
-    });
-    dryGain.dispose();
-    wetGain.dispose();
-    outputGain.dispose();
+    registry.dispose();
   };
 
   return harmonizer;
@@ -180,14 +183,19 @@ function createHarmonizer() {
  */
 function createFreezeReverb() {
   // Create a freeze reverb with infinite sustain capability
+  const registry = new DisposalRegistry('freezeReverb');
+  
   // Use Freeverb which doesn't require async initialization
   const reverb = new Tone.Freeverb(EFFECT_DEFAULTS.freezeReverb);
+  registry.register(reverb);
 
   // Add feedback delay for infinite sustain
   const feedbackDelay = new Tone.FeedbackDelay(EFFECT_DEFAULTS.freezeReverb.feedbackDelay);
+  registry.register(feedbackDelay);
 
   // Add modulation for tail movement
   const modulation = new Tone.Chorus(EFFECT_DEFAULTS.freezeReverb.modulation);
+  registry.register(modulation);
 
   // Create custom freeze control
   const freezeControl = {
@@ -212,6 +220,7 @@ function createFreezeReverb() {
 
   // Chain the effects
   const chain = new Tone.Gain();
+  registry.register(chain);
   chain.chain(reverb, feedbackDelay, modulation);
 
   // Attach freeze control to the chain
@@ -220,9 +229,7 @@ function createFreezeReverb() {
 
   // Add dispose method
   chain.dispose = function() {
-    reverb.dispose();
-    feedbackDelay.dispose();
-    modulation.dispose();
+    registry.dispose();
   };
 
   return chain;

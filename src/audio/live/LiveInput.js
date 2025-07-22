@@ -4,6 +4,7 @@
 import * as Tone from '../../../node_modules/tone/build/esm/index.js';
 import { updateLiveInputState } from '../../state.js';
 import { availableEffects } from '../effects/EffectFactory.js';
+import { DisposalRegistry } from '../../utils/DisposalRegistry.js';
 
 // Live input state
 let liveInput = null;
@@ -12,6 +13,7 @@ let liveInputMonitoringBus = null;
 let liveInputRecorder = null;
 let isLiveInputActive = false;
 let liveInputLatency = 0;
+const liveInputRegistry = new DisposalRegistry('liveInput');
 
 /**
  * Start live audio input
@@ -43,10 +45,12 @@ export async function startLiveInput(config = {}, getMasterBus) {
 
     // Create Tone.js UserMedia node
     liveInput = new Tone.UserMedia();
+    liveInputRegistry.register(liveInput);
     await liveInput.open(stream);
 
     // Create monitoring bus for low-latency monitoring
     liveInputMonitoringBus = new Tone.Gain(1);
+    liveInputRegistry.register(liveInputMonitoringBus);
 
     // Initialize effect chain
     updateLiveInputEffects(config.effects || []);
@@ -102,29 +106,21 @@ export async function stopLiveInput() {
     // Disconnect and dispose
     if (liveInput) {
       liveInput.close();
-      liveInput.dispose();
-      liveInput = null;
-    }
-
-    // Clean up effects
-    liveInputEffectChain.forEach(effect => {
-      effect.disconnect();
-      effect.dispose();
-    });
-    liveInputEffectChain = [];
-
-    if (liveInputMonitoringBus) {
-      liveInputMonitoringBus.disconnect();
-      liveInputMonitoringBus.dispose();
-      liveInputMonitoringBus = null;
     }
 
     // Stop any active recording
     if (liveInputRecorder) {
       await liveInputRecorder.stop();
-      liveInputRecorder.dispose();
-      liveInputRecorder = null;
     }
+
+    // Dispose all registered components
+    liveInputRegistry.dispose();
+    
+    // Reset references
+    liveInput = null;
+    liveInputEffectChain = [];
+    liveInputMonitoringBus = null;
+    liveInputRecorder = null;
 
     isLiveInputActive = false;
 
@@ -184,6 +180,7 @@ export function updateLiveInputEffects(effectsConfig) {
       }
 
       liveInputEffectChain.push(effect);
+      liveInputRegistry.register(effect);
     }
   });
 
@@ -256,6 +253,7 @@ export async function startLiveInputRecording() {
   try {
     // Create recorder connected to the monitoring bus (post-effects)
     liveInputRecorder = new Tone.Recorder();
+    liveInputRegistry.register(liveInputRecorder);
     liveInputMonitoringBus.connect(liveInputRecorder);
 
     // Start recording

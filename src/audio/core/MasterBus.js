@@ -5,6 +5,7 @@ import * as Tone from '../../../node_modules/tone/build/esm/index.js';
 import { MASTER_BUS_CONFIG } from '../constants/index.js';
 import { availableEffects } from '../effects/EffectFactory.js';
 import { audioHealthMonitor } from '../../audioHealthMonitor.js';
+import { DisposalRegistry } from '../../utils/DisposalRegistry.js';
 
 // Master bus state
 let masterBus = null;
@@ -12,6 +13,7 @@ let masterEffectChain = [];
 let masterLimiter = null;
 let masterCompressor = null;
 let masterHighpass = null;
+const masterRegistry = new DisposalRegistry('masterBus');
 
 /**
  * Initialize master bus with processing chain
@@ -20,6 +22,7 @@ let masterHighpass = null;
 function initializeMasterBus() {
   if (!masterBus) {
     masterBus = new Tone.Gain(MASTER_BUS_CONFIG.gain);
+    masterRegistry.register(masterBus);
 
     // Create a compressor for dynamic control
     if (!masterCompressor) {
@@ -29,6 +32,7 @@ function initializeMasterBus() {
         attack: 0.003,
         release: 0.25
       });
+      masterRegistry.register(masterCompressor);
     }
 
     // Create a highpass filter for DC blocking (20Hz cutoff)
@@ -38,11 +42,13 @@ function initializeMasterBus() {
         frequency: 20,
         rolloff: -24
       });
+      masterRegistry.register(masterHighpass);
     }
 
     // Create a limiter to prevent clipping
     if (!masterLimiter) {
       masterLimiter = new Tone.Limiter(MASTER_BUS_CONFIG.limiterThreshold);
+      masterRegistry.register(masterLimiter);
     }
 
     // Connect master bus through processing chain to destination
@@ -81,6 +87,9 @@ export function applyMasterEffectPreset(presetData) {
     effect.dispose();
   });
   masterEffectChain = [];
+  
+  // Clear effect registrations (they've been disposed)
+  // Note: We don't dispose the whole registry as it contains the master bus components
 
   // If no preset data or effects, just connect through processing chain
   if (!presetData || !presetData.effects || presetData.effects.length === 0) {
@@ -136,6 +145,7 @@ export function applyMasterEffectPreset(presetData) {
       }
 
       masterEffectChain.push(effect);
+      masterRegistry.register(effect);
     }
   });
 
@@ -160,30 +170,13 @@ export function getMasterEffectChain() {
  * Dispose master bus and all effects
  */
 export function disposeMasterBus() {
-  if (masterBus) {
-    masterBus.disconnect();
-    masterBus.dispose();
-    masterBus = null;
-  }
-
-  masterEffectChain.forEach(effect => {
-    effect.disconnect();
-    effect.dispose();
-  });
+  // Dispose all registered components
+  masterRegistry.dispose();
+  
+  // Reset references
+  masterBus = null;
   masterEffectChain = [];
-
-  if (masterCompressor) {
-    masterCompressor.dispose();
-    masterCompressor = null;
-  }
-
-  if (masterHighpass) {
-    masterHighpass.dispose();
-    masterHighpass = null;
-  }
-
-  if (masterLimiter) {
-    masterLimiter.dispose();
-    masterLimiter = null;
-  }
+  masterCompressor = null;
+  masterHighpass = null;
+  masterLimiter = null;
 }

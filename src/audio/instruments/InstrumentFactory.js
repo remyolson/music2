@@ -9,6 +9,7 @@ import {
   INSTRUMENT_GAIN_FACTOR
 } from '../constants/index.js';
 import { TRANSITION_PRESETS } from '../constants/limits.js';
+import { DisposalRegistry } from '../../utils/DisposalRegistry.js';
 
 /**
  * Creates an instrument based on type and settings
@@ -69,6 +70,7 @@ export function createInstrument(type, settings = {}) {
       });
 
     case 'strings': {
+      const registry = new DisposalRegistry('strings');
       const stringSynth = new Tone.PolySynth(Tone.FMSynth, {
         harmonicity: 2.8,
         modulationIndex: 5,
@@ -94,6 +96,14 @@ export function createInstrument(type, settings = {}) {
         rolloff: -24
       });
       stringSynth.connect(stringFilter);
+      registry.register(stringSynth);
+      registry.register(stringFilter);
+      
+      // Add dispose method to the returned filter
+      stringFilter.dispose = function() {
+        registry.dispose();
+      };
+      
       return stringFilter;
     }
 
@@ -361,6 +371,7 @@ export function createInstrument(type, settings = {}) {
       });
 
     case 'vibraphone': {
+      const registry = new DisposalRegistry('vibraphone');
       const vibeSynth = new Tone.PolySynth(Tone.FMSynth, {
         harmonicity: 1,
         modulationIndex: 10,
@@ -385,6 +396,14 @@ export function createInstrument(type, settings = {}) {
         depth: 0.1
       });
       vibeSynth.connect(vibrato);
+      registry.register(vibeSynth);
+      registry.register(vibrato);
+      
+      // Add dispose method to the returned vibrato
+      vibrato.dispose = function() {
+        registry.dispose();
+      };
+      
       return vibrato;
     }
 
@@ -496,6 +515,7 @@ export function createInstrument(type, settings = {}) {
 
     case 'granular_pad': {
       // Create a custom granular pad synthesizer with evolving textures
+      const registry = new DisposalRegistry('granularPad');
       const grainSize = settings?.grainSize || 0.1;
       const grainDensity = settings?.grainDensity || 10;
       const shimmer = settings?.shimmer || 0.3;
@@ -550,6 +570,18 @@ export function createInstrument(type, settings = {}) {
 
       // Connect the chain
       granularPad.chain(shimmerChorus, tremolo, warmthFilter, spatialDelay);
+      
+      // Register all components
+      registry.register(granularPad);
+      registry.register(shimmerChorus);
+      registry.register(tremolo);
+      registry.register(warmthFilter);
+      registry.register(spatialDelay);
+      
+      // Add dispose method to the returned delay
+      spatialDelay.dispose = function() {
+        registry.dispose();
+      };
 
       return spatialDelay;
     }
