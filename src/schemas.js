@@ -79,11 +79,11 @@ export const TrackSettingsSchema = z.object({
 
 export const TrackSchema = z.object({
   name: z.string().min(1),
-  instrument: z.enum(['synth_lead', 'synth_bass', 'piano', 'strings', 'brass', 'drums_kit', 'electric_guitar', 'organ', 'flute', 'harp', 'drums_electronic', 'marimba', 'trumpet', 'violin', 'saxophone', 'pad_synth']),
+  instrument: z.enum(['synth_lead', 'synth_bass', 'piano', 'strings', 'brass', 'drums_kit', 'electric_guitar', 'organ', 'flute', 'harp', 'drums_electronic', 'marimba', 'trumpet', 'violin', 'saxophone', 'pad_synth', 'celesta', 'vibraphone', 'xylophone', 'clarinet', 'tuba', 'choir', 'banjo', 'electric_piano']),
   notes: z.array(NoteSchema),
   settings: TrackSettingsSchema
 }).refine((track) => {
-  const melodicInstruments = ['synth_lead', 'synth_bass', 'piano', 'strings', 'brass', 'electric_guitar', 'organ', 'flute', 'harp', 'marimba', 'trumpet', 'violin', 'saxophone', 'pad_synth'];
+  const melodicInstruments = ['synth_lead', 'synth_bass', 'piano', 'strings', 'brass', 'electric_guitar', 'organ', 'flute', 'harp', 'marimba', 'trumpet', 'violin', 'saxophone', 'pad_synth', 'celesta', 'vibraphone', 'xylophone', 'clarinet', 'tuba', 'choir', 'banjo', 'electric_piano'];
 
   if (melodicInstruments.includes(track.instrument)) {
     return track.notes.every(note =>

@@ -678,6 +678,11 @@ export function stop() {
   // Cancel any scheduled events to prevent dangling callbacks
   Tone.Transport.cancel(0);
 
+  // Stop all parts so they can be restarted
+  parts.forEach(part => {
+    part.stop();
+  });
+
   // Immediately release all active notes to stop sound instantly
   instruments.forEach(({ instrument }) => {
     if (instrument.releaseAll) {
