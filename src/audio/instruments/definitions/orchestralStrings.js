@@ -138,7 +138,7 @@ function createStringInstrument(instrumentType) {
         stringTension: 1.0,
         
         // Enhanced playing methods
-        play: (notes, velocity = 100, time = '+0', duration = '4n') => {
+        play: function(notes, velocity = 100, time = '+0', duration = '4n') {
           const noteArray = Array.isArray(notes) ? notes : [notes];
           const articulationSettings = ARTICULATIONS[this.currentArticulation];
           
@@ -152,8 +152,12 @@ function createStringInstrument(instrumentType) {
           
           // Play with current articulation
           for (const note of noteArray) {
-            orchestralStrings.setArticulation(this.currentArticulation);
-            orchestralStrings.play(note, velocity, time, duration);
+            if (orchestralStrings && orchestralStrings.setArticulation) {
+              orchestralStrings.setArticulation(this.currentArticulation);
+            }
+            if (orchestralStrings && orchestralStrings.play) {
+              orchestralStrings.play(note, velocity, time, duration);
+            }
             
             // Add harmonic resonance for open strings
             if (this._isOpenString(note)) {
@@ -162,7 +166,7 @@ function createStringInstrument(instrumentType) {
           }
         },
 
-        triggerAttack: (notes, time = '+0', velocity = 100) => {
+        triggerAttack: function(notes, time = '+0', velocity = 100) {
           const noteArray = Array.isArray(notes) ? notes : [notes];
           const articulationSettings = ARTICULATIONS[this.currentArticulation];
           
@@ -171,57 +175,89 @@ function createStringInstrument(instrumentType) {
           }
           
           for (const note of noteArray) {
-            orchestralStrings.setArticulation(this.currentArticulation);
-            orchestralStrings.sampler.triggerAttack(note, time, velocity / 127);
+            if (orchestralStrings && orchestralStrings.setArticulation) {
+              orchestralStrings.setArticulation(this.currentArticulation);
+            }
+            if (orchestralStrings && orchestralStrings.sampler && orchestralStrings.sampler.triggerAttack) {
+              orchestralStrings.sampler.triggerAttack(note, time, velocity / 127);
+            } else if (orchestralStrings && orchestralStrings.triggerAttack) {
+              orchestralStrings.triggerAttack(note, time, velocity / 127);
+            }
           }
         },
 
-        triggerRelease: (notes, time = '+0') => {
+        triggerRelease: function(notes, time = '+0') {
           const noteArray = Array.isArray(notes) ? notes : [notes];
           
           for (const note of noteArray) {
-            orchestralStrings.sampler.triggerRelease(note, time);
+            if (orchestralStrings && orchestralStrings.sampler && orchestralStrings.sampler.triggerRelease) {
+              orchestralStrings.sampler.triggerRelease(note, time);
+            } else if (orchestralStrings && orchestralStrings.triggerRelease) {
+              orchestralStrings.triggerRelease(note, time);
+            }
           }
           
           bowEnvelope.triggerRelease(time);
         },
 
         triggerAttackRelease: (notes, duration, time = '+0', velocity = 100) => {
-          this.play(notes, velocity, time, duration);
+          const noteArray = Array.isArray(notes) ? notes : [notes];
+          const articulationSettings = ARTICULATIONS[this.currentArticulation];
+          
+          if (this.currentArticulation === 'arco' || this.currentArticulation === 'legato') {
+            bowEnvelope.triggerAttackRelease(duration, time);
+          }
+          
+          for (const note of noteArray) {
+            if (orchestralStrings && orchestralStrings.setArticulation) {
+              orchestralStrings.setArticulation(this.currentArticulation);
+            }
+            if (orchestralStrings && orchestralStrings.sampler && orchestralStrings.sampler.triggerAttackRelease) {
+              orchestralStrings.sampler.triggerAttackRelease(note, duration, time, velocity / 127);
+            } else if (orchestralStrings && orchestralStrings.triggerAttackRelease) {
+              orchestralStrings.triggerAttackRelease(note, duration, time, velocity / 127);
+            } else {
+              console.warn(`Orchestra strings missing triggerAttackRelease for note: ${note}`);
+            }
+          }
         },
 
         // Articulation control
-        setArticulation: (articulation) => {
+        setArticulation: function(articulation) {
           if (ARTICULATIONS[articulation]) {
             this.currentArticulation = articulation;
-            orchestralStrings.setArticulation(articulation);
+            if (orchestralStrings && orchestralStrings.setArticulation) {
+              orchestralStrings.setArticulation(articulation);
+            }
           }
         },
 
         getAvailableArticulations: () => Object.keys(ARTICULATIONS),
 
         // Expression controls
-        setVibrato: (rate = 5, depth = 0.1) => {
+        setVibrato: function(rate = 5, depth = 0.1) {
           this.vibratoRate = rate;
           this.vibratoDepth = depth;
           vibratoLFO.frequency.value = rate;
           vibratoGain.gain.value = depth;
           
           // Connect vibrato to orchestral strings if available
-          if (orchestralStrings.addVibrato) {
+          if (orchestralStrings && orchestralStrings.addVibrato) {
             orchestralStrings.addVibrato(rate, depth);
           }
         },
 
-        setBowPressure: (pressure) => {
+        setBowPressure: function(pressure) {
           this.bowPressure = Math.max(0, Math.min(1, pressure));
           bowGain.gain.value = this.bowPressure * 0.05;
         },
 
-        setStringTension: (tension) => {
+        setStringTension: function(tension) {
           this.stringTension = Math.max(0.5, Math.min(2, tension));
           // Adjust resonance based on string tension
-          resonanceDelay.delayTime.value = 0.03 / this.stringTension;
+          if (resonanceDelay && resonanceDelay.delayTime) {
+            resonanceDelay.delayTime.value = 0.03 / this.stringTension;
+          }
         },
 
         // Advanced techniques
@@ -251,23 +287,24 @@ function createStringInstrument(instrumentType) {
         },
 
         // Section ensemble methods
-        createSection: (sectionSize = 4, spread = 0.1) => {
+        createSection: function(sectionSize = 4, spread = 0.1) {
           return this._createStringSection(sectionSize, spread, registry);
         },
 
         // Utility methods
-        _isOpenString: (note) => {
+        _isOpenString: function(note) {
           return config.openStrings.includes(note);
         },
 
-        _addOpenStringResonance: (note, velocity, time) => {
+        _addOpenStringResonance: function(note, velocity, time) {
           // Add sympathetic resonance for open string notes
           const resonanceNote = Tone.Frequency(note).transpose(-12).toNote();
           resonanceGain.gain.setValueAtTime(velocity / 2000, time);
         },
 
-        _createStringSection: (size, spread, registry) => {
+        _createStringSection: function(size, spread, registry) {
           const sectionPlayers = [];
+          const self = this;
           
           for (let i = 0; i < size; i++) {
             const detuning = (Math.random() - 0.5) * spread;
@@ -276,20 +313,20 @@ function createStringInstrument(instrumentType) {
             sectionPlayers.push({
               detuning,
               timing,
-              play: (notes, velocity, time, duration) => {
-                const adjustedTime = time + timing;
+              play: function(notes, velocity, time, duration) {
+                const adjustedTime = time + this.timing;
                 const adjustedNotes = Array.isArray(notes) ? 
-                  notes.map(note => Tone.Frequency(note).transpose(detuning * 100).toNote()) :
-                  Tone.Frequency(notes).transpose(detuning * 100).toNote();
+                  notes.map(note => Tone.Frequency(note).transpose(this.detuning * 100).toNote()) :
+                  Tone.Frequency(notes).transpose(this.detuning * 100).toNote();
                 
-                this.play(adjustedNotes, velocity * (0.9 + Math.random() * 0.2), adjustedTime, duration);
+                self.play(adjustedNotes, velocity * (0.9 + Math.random() * 0.2), adjustedTime, duration);
               }
             });
           }
           
           return {
             players: sectionPlayers,
-            playUnison: (notes, velocity, time, duration) => {
+            playUnison: function(notes, velocity, time, duration) {
               sectionPlayers.forEach(player => {
                 player.play(notes, velocity, time, duration);
               });
@@ -298,23 +335,47 @@ function createStringInstrument(instrumentType) {
         },
 
         // Standard Tone.js interface
-        chain: (...effects) => {
-          orchestralStrings.sampler.chain(...effects);
+        chain: function(...effects) {
+          if (orchestralStrings && orchestralStrings.sampler && orchestralStrings.sampler.chain) {
+            orchestralStrings.sampler.chain(...effects);
+          } else if (orchestralStrings && orchestralStrings.chain) {
+            orchestralStrings.chain(...effects);
+          } else {
+            console.warn('Orchestral strings missing chain method');
+          }
           return this;
         },
 
-        connect: (destination) => {
-          orchestralStrings.sampler.connect(destination);
+        connect: function(destination) {
+          if (orchestralStrings && orchestralStrings.sampler && orchestralStrings.sampler.connect) {
+            orchestralStrings.sampler.connect(destination);
+          } else if (orchestralStrings && orchestralStrings.connect) {
+            orchestralStrings.connect(destination);
+          } else {
+            console.warn('Orchestral strings missing connect method');
+          }
           return this;
         },
 
-        disconnect: () => {
-          orchestralStrings.sampler.disconnect();
+        disconnect: function() {
+          if (orchestralStrings && orchestralStrings.sampler && orchestralStrings.sampler.disconnect) {
+            orchestralStrings.sampler.disconnect();
+          } else if (orchestralStrings && orchestralStrings.disconnect) {
+            orchestralStrings.disconnect();
+          } else {
+            console.warn('Orchestral strings missing disconnect method');
+          }
           return this;
         },
 
-        toDestination: () => {
-          orchestralStrings.sampler.toDestination();
+        toDestination: function() {
+          if (orchestralStrings && orchestralStrings.sampler && orchestralStrings.sampler.toDestination) {
+            orchestralStrings.sampler.toDestination();
+          } else if (orchestralStrings && orchestralStrings.toDestination) {
+            orchestralStrings.toDestination();
+          } else {
+            console.warn('Orchestral strings missing toDestination method');
+          }
           return this;
         },
 
@@ -323,8 +384,10 @@ function createStringInstrument(instrumentType) {
         isSampleBased: () => true,
 
         // Memory management
-        dispose: () => {
-          orchestralStrings.dispose();
+        dispose: function() {
+          if (orchestralStrings && orchestralStrings.dispose) {
+            orchestralStrings.dispose();
+          }
           registry.dispose();
         }
       };
@@ -378,24 +441,24 @@ function createStringInstrument(instrumentType) {
         currentArticulation: config.defaultArticulation,
         
         // Simplified interface matching sample-based version
-        play: (notes, velocity = 100, time = '+0', duration = '4n') => {
+        play: function(notes, velocity = 100, time = '+0', duration = '4n') {
           synth.triggerAttackRelease(notes, duration, time, velocity / 127);
         },
 
-        triggerAttack: (notes, time = '+0', velocity = 100) => {
+        triggerAttack: function(notes, time = '+0', velocity = 100) {
           synth.triggerAttack(notes, time, velocity / 127);
         },
 
-        triggerRelease: (notes, time = '+0') => {
+        triggerRelease: function(notes, time = '+0') {
           synth.triggerRelease(notes, time);
         },
 
-        triggerAttackRelease: (notes, duration, time = '+0', velocity = 100) => {
+        triggerAttackRelease: function(notes, duration, time = '+0', velocity = 100) {
           synth.triggerAttackRelease(notes, duration, time, velocity / 127);
         },
 
         // Simplified articulation (affects envelope only)
-        setArticulation: (articulation) => {
+        setArticulation: function(articulation) {
           this.currentArticulation = articulation;
           const settings = ARTICULATIONS[articulation];
           if (settings) {
@@ -475,11 +538,11 @@ export const stringSection = {
     const celloSection = await cello.create(settings);
     const bassSection = await doubleBass.create(settings);
     
-    return {
+    const stringSection = {
       type: 'string_section',
       sections: { violinI, violinII, violaSection, celloSection, bassSection },
       
-      playChord: (chord, velocity = 100, time = '+0', duration = '1n') => {
+      playChord: function(chord, velocity = 100, time = '+0', duration = '1n') {
         const notes = Array.isArray(chord) ? chord : [chord];
         
         // Distribute notes across sections
@@ -494,10 +557,48 @@ export const stringSection = {
         }
       },
       
-      dispose: () => {
+      triggerAttackRelease: function(notes, duration, time = '+0', velocity = 100) {
+        this.playChord(notes, velocity, time, duration);
+      },
+      
+      chain: function(...effects) {
+        // Chain effects to all sections
+        Object.values(this.sections).forEach(section => {
+          if (section.chain) section.chain(...effects);
+        });
+        return this;
+      },
+      
+      connect: function(destination) {
+        // Connect all sections to destination
+        Object.values(this.sections).forEach(section => {
+          if (section.connect) section.connect(destination);
+        });
+        return this;
+      },
+      
+      disconnect: function() {
+        // Disconnect all sections
+        Object.values(this.sections).forEach(section => {
+          if (section.disconnect) section.disconnect();
+        });
+        return this;
+      },
+      
+      toDestination: function() {
+        // Connect all sections to destination
+        Object.values(this.sections).forEach(section => {
+          if (section.toDestination) section.toDestination();
+        });
+        return this;
+      },
+      
+      dispose: function() {
         Object.values(this.sections).forEach(section => section.dispose());
         registry.dispose();
       }
     };
+    
+    return stringSection;
   }
 };
