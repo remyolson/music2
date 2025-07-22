@@ -73,17 +73,17 @@ export function update(musicData) {
       }
 
       if (track.instrument === 'drums_kit' || track.instrument === 'drums_electronic') {
-        playInstrument[note.value].triggerAttackRelease(note.duration, time, velocity);
+        playInstrument[note.value].triggerAttackRelease(note.duration + "s", time, velocity);
       } else {
         // Handle chords (arrays of notes)
         if (Array.isArray(note.value)) {
           const frequencies = note.value.map(midi =>
             Tone.Frequency(midi, 'midi').toFrequency()
           );
-          playInstrument.triggerAttackRelease(frequencies, note.duration, time, velocity);
+          playInstrument.triggerAttackRelease(frequencies, note.duration + "s", time, velocity);
         } else {
           const frequency = Tone.Frequency(note.value, 'midi').toFrequency();
-          playInstrument.triggerAttackRelease(frequency, note.duration, time, velocity);
+          playInstrument.triggerAttackRelease(frequency, note.duration + "s", time, velocity);
         }
       }
     }, expandedNotes.map(note => ({
@@ -686,11 +686,18 @@ export function stop() {
   // Immediately release all active notes to stop sound instantly
   instruments.forEach(({ instrument }) => {
     if (instrument.releaseAll) {
-      instrument.releaseAll(true);
+      // PolySynth has releaseAll
+      instrument.releaseAll();
+    } else if (instrument.triggerRelease) {
+      // MonoSynth has triggerRelease - use immediate time to stop sound
+      instrument.triggerRelease(Tone.now());
     } else if (typeof instrument === 'object') {
+      // Handle drum kits and other compound instruments
       Object.values(instrument).forEach(subInst => {
         if (subInst.releaseAll) {
-          subInst.releaseAll(true);
+          subInst.releaseAll();
+        } else if (subInst.triggerRelease) {
+          subInst.triggerRelease(Tone.now());
         }
       });
     }

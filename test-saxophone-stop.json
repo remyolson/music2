@@ -1,0 +1,21 @@
+{
+  "title": "Saxophone Stop Issue Test",
+  "tempo": 120,
+  "tracks": [
+    {
+      "name": "Saxophone",
+      "instrument": "saxophone",
+      "notes": [
+        { "time": 0, "duration": 2, "value": 63, "volume": 0.7 },
+        { "time": 2, "duration": 2, "value": 60, "volume": 0.7 },
+        { "time": 4, "duration": 2, "value": 58, "volume": 0.7 },
+        { "time": 6, "duration": 2, "value": 55, "volume": 0.7, "repeat": 4 }
+      ],
+      "settings": {
+        "noteTransition": "legato",
+        "portamento": 0.08,
+        "globalEffects": [{ "type": "reverb", "level": 0.6 }]
+      }
+    }
+  ]
+}
