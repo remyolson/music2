@@ -6,7 +6,7 @@ export const effectPresets = {
     description: 'Clean, unprocessed audio',
     effects: []
   },
-  
+
   // Bon Iver-inspired presets
   'bon-iver-classic': {
     name: 'Bon Iver Classic',
@@ -29,7 +29,7 @@ export const effectPresets = {
       }
     ]
   },
-  
+
   'woods': {
     name: 'Woods',
     description: 'Deep forest ambience with pitch shifting',
@@ -59,7 +59,7 @@ export const effectPresets = {
       }
     ]
   },
-  
+
   'holocene': {
     name: 'Holocene',
     description: 'Ethereal harmonies with subtle modulation',
@@ -89,9 +89,9 @@ export const effectPresets = {
       }
     ]
   },
-  
+
   'creeks': {
-    name: 'Creeks', 
+    name: 'Creeks',
     description: 'Flowing water-like modulation',
     effects: [
       {
@@ -121,7 +121,7 @@ export const effectPresets = {
       }
     ]
   },
-  
+
   'skinny-love': {
     name: 'Skinny Love',
     description: 'Intimate vocals with warm harmonies',
@@ -150,7 +150,7 @@ export const effectPresets = {
       }
     ]
   },
-  
+
   'michicant': {
     name: 'Michicant',
     description: 'Glitchy, chopped vocals',
@@ -179,7 +179,7 @@ export const effectPresets = {
       }
     ]
   },
-  
+
   // Standard vocal presets
   'radio-ready': {
     name: 'Radio Ready',
@@ -202,7 +202,7 @@ export const effectPresets = {
       }
     ]
   },
-  
+
   'dream-pop': {
     name: 'Dream Pop',
     description: 'Ethereal, floating vocals',
@@ -233,7 +233,7 @@ export const effectPresets = {
       }
     ]
   },
-  
+
   'lofi-bedroom': {
     name: 'Lo-Fi Bedroom',
     description: 'Warm, intimate sound',
@@ -263,7 +263,7 @@ export const effectPresets = {
       }
     ]
   },
-  
+
   'cathedral': {
     name: 'Cathedral',
     description: 'Massive reverberant space',
@@ -289,8 +289,8 @@ export const effectPresets = {
 // Apply preset to a track or globally
 export function applyEffectPreset(presetId, trackName = null) {
   const preset = effectPresets[presetId];
-  if (!preset) return null;
-  
+  if (!preset) {return null;}
+
   return {
     name: preset.name,
     effects: preset.effects.map(effect => ({
@@ -320,14 +320,14 @@ export function saveCustomPreset(name, effects) {
     description: 'Custom preset',
     effects
   };
-  
+
   // Save to localStorage
   try {
     localStorage.setItem('customEffectPresets', JSON.stringify(customPresets));
   } catch (e) {
     console.warn('Failed to save custom preset:', e);
   }
-  
+
   return id;
 }
 

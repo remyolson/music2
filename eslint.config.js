@@ -27,7 +27,16 @@ export default [
         alert: 'readonly',
         confirm: 'readonly',
         MouseEvent: 'readonly',
-        KeyboardEvent: 'readonly'
+        KeyboardEvent: 'readonly',
+        prompt: 'readonly',
+        CustomEvent: 'readonly',
+        Event: 'readonly',
+        getComputedStyle: 'readonly',
+        performance: 'readonly',
+        PerformanceObserver: 'readonly',
+        AudioContext: 'readonly',
+        Tone: 'readonly',
+        sampleRate: 'readonly'
       }
     },
     rules: {

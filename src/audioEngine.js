@@ -2,27 +2,27 @@ import * as Tone from '../node_modules/tone/build/esm/index.js';
 import { performanceOptimizer } from './performanceOptimizer.js';
 import { updateLiveInputState } from './state.js';
 import { audioHealthMonitor } from './audioHealthMonitor.js';
-import { 
-  SAFE_LIMITS, 
-  MASTER_BUS_CONFIG, 
-  DEFAULT_ENVELOPE, 
-  TRANSITION_PRESETS,
-  EFFECT_DEFAULTS,
-  FREEZE_REVERB_CONFIG,
-  HARMONIZER_PRESETS,
-  HARMONIZER_MAX_VOICES,
-  HARMONIZER_DEFAULT_VOICE_LEVEL,
+import {
+  MASTER_BUS_CONFIG,
   DRUM_PITCHES,
-  DRUM_DURATIONS,
-  INSTRUMENT_GAIN_FACTOR
+  DRUM_DURATIONS
 } from './audio/constants/index.js';
-import { availableEffects, createSafeEffect } from './audio/effects/EffectFactory.js';
+import { availableEffects } from './audio/effects/EffectFactory.js';
 import { createInstrumentWithEffects } from './audio/instruments/InstrumentFactory.js';
+import { 
+  startLiveInput as startLiveInputModule,
+  stopLiveInput as stopLiveInputModule,
+  updateLiveInputEffects as updateLiveInputEffectsModule,
+  measureLiveInputLatency as measureLiveInputLatencyModule,
+  startLiveInputRecording as startLiveInputRecordingModule,
+  stopLiveInputRecording as stopLiveInputRecordingModule,
+  getLiveInputStatus as getLiveInputStatusModule
+} from './audio/live/LiveInput.js';
 
-let instruments = new Map();
+const instruments = new Map();
 let parts = [];
 let isPlaying = false;
-let effects = new Map();
+const effects = new Map();
 let harmonyCallback = null;
 
 // Master bus for global effects
@@ -33,15 +33,7 @@ let masterCompressor = null;
 let masterHighpass = null;
 
 // Track temporary effects that need cleanup
-let temporaryEffects = new Map();
-
-// Live input state
-let liveInput = null;
-let liveInputEffectChain = [];
-let liveInputMonitoringBus = null;
-let liveInputRecorder = null;
-let isLiveInputActive = false;
-let liveInputLatency = 0;
+const temporaryEffects = new Map();
 
 // Initialize performance optimizer
 performanceOptimizer.initialize().catch(console.warn);
@@ -61,10 +53,10 @@ function expandNotesWithRepeat(notes) {
       expanded.push(note);
     }
   });
-  
+
   // Sort by time and add small offset to duplicate times
   expanded.sort((a, b) => a.time - b.time);
-  
+
   // Add small time offset to notes with identical start times
   let timeOffset = 0;
   for (let i = 1; i < expanded.length; i++) {
@@ -75,41 +67,42 @@ function expandNotesWithRepeat(notes) {
       timeOffset = 0; // Reset offset when times are different
     }
   }
-  
+
   return expanded;
 }
 
 export async function update(musicData) {
   // Stop transport if playing to avoid timing conflicts
-  if (Tone.Transport.state === "started") {
+  if (Tone.Transport.state === 'started') {
     Tone.Transport.stop();
   }
-  
+
   cleanup();
 
-  if (!musicData) return;
+  if (!musicData) {return;}
 
   Tone.Transport.bpm.value = musicData.tempo;
 
   const secondsPerBeat = 60 / musicData.tempo;
 
-  musicData.tracks.forEach((track, trackIndex) => {
+  for (let trackIndex = 0; trackIndex < musicData.tracks.length; trackIndex++) {
+    const track = musicData.tracks[trackIndex];
     const { instrument, effectChain } = await createInstrumentWithEffects(track, getMasterBus);
     instruments.set(track.name, { instrument, effectChain });
 
     const expandedNotes = expandNotesWithRepeat(track.notes);
-    
+
     // Debug drum timing issues
-    if (track.name === "Drums" || track.instrument === "drums_kit" || track.instrument === "drums_electronic") {
-      console.log(`${track.name} track - first 10 expanded notes:`, 
+    if (track.name === 'Drums' || track.instrument === 'drums_kit' || track.instrument === 'drums_electronic') {
+      console.log(`${track.name} track - first 10 expanded notes:`,
         expandedNotes.slice(0, 10).map(n => ({
-          time: n.time, 
-          value: n.value, 
+          time: n.time,
+          value: n.value,
           duration: n.duration
         }))
       );
     }
-    
+
     // Convert notes to the format Tone.Part expects
     const partNotes = expandedNotes.map(note => ({
       time: note.time * secondsPerBeat,
@@ -132,72 +125,72 @@ export async function update(musicData) {
           console.error(`Invalid note in track ${track.name}:`, note);
           return;
         }
-        
+
         if (note.duration <= 0) {
           console.error(`Invalid duration for note in track ${track.name}:`, note);
           return;
         }
-        
+
         const volume = note.volume !== undefined ? note.volume : 0.7;
         const velocity = volume;
 
-        let playInstrument = instrument;
+        const playInstrument = instrument;
 
-      // Handle pitch shifting effect if pitch parameter is present
-      if (note.pitch !== undefined && note.pitch !== 0) {
+        // Handle pitch shifting effect if pitch parameter is present
+        if (note.pitch !== undefined && note.pitch !== 0) {
         // Create temporary pitch effect that will be cleaned up
-        const pitchEffect = new Tone.PitchShift({ 
-          pitch: note.pitch,
-          windowSize: 0.1,
-          wet: 1.0
-        });
-        
-        // Connect through pitch effect
-        playInstrument.disconnect();
-        playInstrument.chain(pitchEffect, getMasterBus());
-        
-        // Schedule cleanup after note ends
-        Tone.Transport.scheduleOnce(() => {
-          playInstrument.disconnect();
-          playInstrument.connect(getMasterBus());
-          pitchEffect.dispose();
-        }, time + note.duration);
-      }
-
-      // Handle harmonize array if present
-      if (note.harmonize && Array.isArray(note.harmonize) && note.harmonize.length > 0) {
-        // Use a shared harmonizer per track, update its settings
-        const harmonizerKey = `${track.name}-harmonizer`;
-        let harmonizer = effects.get(harmonizerKey);
-        
-        if (!harmonizer) {
-          harmonizer = availableEffects.harmonizer();
-          effects.set(harmonizerKey, harmonizer);
-        }
-        
-        // Update health monitor
-        audioHealthMonitor.updateEffectCount(effects.size + masterEffectChain.length);
-        
-        // Update harmonizer settings for this note
-        harmonizer.setIntervals(note.harmonize);
-        
-        // Set mix level if provided
-        if (note.harmonizeMix !== undefined) {
-          harmonizer.setMix(note.harmonizeMix);
-        }
-        
-        // Set individual voice levels if provided
-        if (note.harmonizeLevels && Array.isArray(note.harmonizeLevels)) {
-          note.harmonizeLevels.forEach((level, index) => {
-            harmonizer.setVoiceLevel(index, level);
+          const pitchEffect = new Tone.PitchShift({
+            pitch: note.pitch,
+            windowSize: 0.1,
+            wet: 1.0
           });
+
+          // Connect through pitch effect
+          playInstrument.disconnect();
+          playInstrument.chain(pitchEffect, getMasterBus());
+
+          // Schedule cleanup after note ends
+          Tone.Transport.scheduleOnce(() => {
+            playInstrument.disconnect();
+            playInstrument.connect(getMasterBus());
+            pitchEffect.dispose();
+          }, time + note.duration);
         }
-        
-        // Chain harmonizer to instrument
-        playInstrument.disconnect();
-        playInstrument.chain(harmonizer, getMasterBus());
-      }
-        
+
+        // Handle harmonize array if present
+        if (note.harmonize && Array.isArray(note.harmonize) && note.harmonize.length > 0) {
+        // Use a shared harmonizer per track, update its settings
+          const harmonizerKey = `${track.name}-harmonizer`;
+          let harmonizer = effects.get(harmonizerKey);
+
+          if (!harmonizer) {
+            harmonizer = availableEffects.harmonizer();
+            effects.set(harmonizerKey, harmonizer);
+          }
+
+          // Update health monitor
+          audioHealthMonitor.updateEffectCount(effects.size + masterEffectChain.length);
+
+          // Update harmonizer settings for this note
+          harmonizer.setIntervals(note.harmonize);
+
+          // Set mix level if provided
+          if (note.harmonizeMix !== undefined) {
+            harmonizer.setMix(note.harmonizeMix);
+          }
+
+          // Set individual voice levels if provided
+          if (note.harmonizeLevels && Array.isArray(note.harmonizeLevels)) {
+            note.harmonizeLevels.forEach((level, index) => {
+              harmonizer.setVoiceLevel(index, level);
+            });
+          }
+
+          // Chain harmonizer to instrument
+          playInstrument.disconnect();
+          playInstrument.chain(harmonizer, getMasterBus());
+        }
+
         // Notify harmony visualizer
         if (harmonyCallback) {
           harmonyCallback({
@@ -207,55 +200,55 @@ export async function update(musicData) {
           });
         }
 
-      if (note.effect && availableEffects[note.effect]) {
-        const noteEffect = effects.get(`${track.name}-${note.effect}-${time}`);
-        if (!noteEffect) {
-          const newEffect = availableEffects[note.effect]();
-          if (note.effectLevel !== undefined) {
-            newEffect.wet.value = note.effectLevel;
-          }
-          // Handle pitch parameter for pitchShift effect
-          if (note.effect === 'pitchShift' && note.pitch !== undefined) {
-            newEffect.pitch = note.pitch;
-          }
-          effects.set(`${track.name}-${note.effect}-${time}`, newEffect);
-          newEffect.connect(getMasterBus());
-          
-          // Update health monitor
-          audioHealthMonitor.updateEffectCount(effects.size + masterEffectChain.length);
-        }
-      }
+        if (note.effect && availableEffects[note.effect]) {
+          const noteEffect = effects.get(`${track.name}-${note.effect}-${time}`);
+          if (!noteEffect) {
+            const newEffect = availableEffects[note.effect]();
+            if (note.effectLevel !== undefined) {
+              newEffect.wet.value = note.effectLevel;
+            }
+            // Handle pitch parameter for pitchShift effect
+            if (note.effect === 'pitchShift' && note.pitch !== undefined) {
+              newEffect.pitch = note.pitch;
+            }
+            effects.set(`${track.name}-${note.effect}-${time}`, newEffect);
+            newEffect.connect(getMasterBus());
 
-      // Handle formant parameter for vocoder synth
-      if (track.instrument === 'vocoder_synth' && note.formant !== undefined && playInstrument.formantControl) {
-        playInstrument.formantControl(note.formant);
-      }
-
-      if (track.instrument === 'drums_kit' || track.instrument === 'drums_electronic') {
-        if (!playInstrument[note.value]) {
-          console.error(`Invalid drum note "${note.value}" in track ${track.name}. Expected "kick" or "snare"`);
-          return;
+            // Update health monitor
+            audioHealthMonitor.updateEffectCount(effects.size + masterEffectChain.length);
+          }
         }
-        // For drums, handle kick and snare differently
-        if (note.value === 'kick') {
+
+        // Handle formant parameter for vocoder synth
+        if (track.instrument === 'vocoder_synth' && note.formant !== undefined && playInstrument.formantControl) {
+          playInstrument.formantControl(note.formant);
+        }
+
+        if (track.instrument === 'drums_kit' || track.instrument === 'drums_electronic') {
+          if (!playInstrument[note.value]) {
+            console.error(`Invalid drum note "${note.value}" in track ${track.name}. Expected "kick" or "snare"`);
+            return;
+          }
+          // For drums, handle kick and snare differently
+          if (note.value === 'kick') {
           // Kick uses PolySynth
-          playInstrument.kick.triggerAttackRelease(DRUM_PITCHES.kick, DRUM_DURATIONS.kick, time, velocity);
-        } else {
+            playInstrument.kick.triggerAttackRelease(DRUM_PITCHES.kick, DRUM_DURATIONS.kick, time, velocity);
+          } else {
           // Snare uses regular synth
-          playInstrument.snare.triggerAttackRelease(DRUM_PITCHES.snare, DRUM_DURATIONS.snare, time, velocity);
-        }
-      } else {
-        // Handle chords (arrays of notes)
-        if (Array.isArray(note.value)) {
-          const frequencies = note.value.map(midi =>
-            Tone.Frequency(midi, 'midi').toFrequency()
-          );
-          playInstrument.triggerAttackRelease(frequencies, note.duration + "s", time, velocity);
+            playInstrument.snare.triggerAttackRelease(DRUM_PITCHES.snare, DRUM_DURATIONS.snare, time, velocity);
+          }
         } else {
-          const frequency = Tone.Frequency(note.value, 'midi').toFrequency();
-          playInstrument.triggerAttackRelease(frequency, note.duration + "s", time, velocity);
+        // Handle chords (arrays of notes)
+          if (Array.isArray(note.value)) {
+            const frequencies = note.value.map(midi =>
+              Tone.Frequency(midi, 'midi').toFrequency()
+            );
+            playInstrument.triggerAttackRelease(frequencies, note.duration + 's', time, velocity);
+          } else {
+            const frequency = Tone.Frequency(note.value, 'midi').toFrequency();
+            playInstrument.triggerAttackRelease(frequency, note.duration + 's', time, velocity);
+          }
         }
-      }
       } catch (error) {
         console.error(`Error playing note in track ${track.name}:`, error, note);
       }
@@ -265,7 +258,7 @@ export async function update(musicData) {
     part.loop = true;
     part.loopEnd = getLoopEnd({ tracks: [track] }) * secondsPerBeat;
     parts.push(part);
-  });
+  }
 }
 
 // Instrument creation functions have been moved to InstrumentFactory.js
@@ -276,7 +269,7 @@ function getLoopEnd(musicData) {
     const notes = expandNotesWithRepeat(track.notes);
     notes.forEach(note => {
       const endTime = note.time + note.duration;
-      if (endTime > maxTime) maxTime = endTime;
+      if (endTime > maxTime) {maxTime = endTime;}
     });
   });
   return Math.ceil(maxTime);
@@ -292,7 +285,7 @@ function cleanup() {
   instruments.forEach(({ instrument, effectChain }) => {
     if (effectChain) {
       effectChain.forEach(effect => {
-        if (effect.dispose) effect.dispose();
+        if (effect.dispose) {effect.dispose();}
       });
     }
 
@@ -300,44 +293,44 @@ function cleanup() {
       instrument.dispose();
     } else if (typeof instrument === 'object') {
       Object.values(instrument).forEach(subInstrument => {
-        if (subInstrument.dispose) subInstrument.dispose();
+        if (subInstrument.dispose) {subInstrument.dispose();}
       });
     }
   });
   instruments.clear();
 
   effects.forEach(effect => {
-    if (effect.dispose) effect.dispose();
+    if (effect.dispose) {effect.dispose();}
   });
   effects.clear();
-  
+
   // Clean up any temporary effects
   temporaryEffects.forEach(effect => {
-    if (effect.dispose) effect.dispose();
+    if (effect.dispose) {effect.dispose();}
   });
   temporaryEffects.clear();
-  
+
   // Cancel all scheduled events to prevent lingering effects
   Tone.Transport.cancel();
 }
 
 export async function play() {
-  if (isPlaying) return;
+  if (isPlaying) {return;}
 
   // Ensure audio context is started
   if (Tone.context.state !== 'running') {
     await Tone.start();
     console.log('Audio context started');
   }
-  
+
   // Initialize and start health monitoring
   audioHealthMonitor.initialize();
   audioHealthMonitor.startMonitoring();
-  
+
   // Update effect count
   const totalEffects = effects.size + masterEffectChain.length + temporaryEffects.size;
   audioHealthMonitor.updateEffectCount(totalEffects);
-  
+
   parts.forEach(part => part.start(0));
   Tone.Transport.start();
   isPlaying = true;
@@ -401,42 +394,42 @@ const freezeRecorders = new Map(); // Stores active recorders
 export async function freezeTrack(trackIndex, duration) {
   // Stop any existing freeze for this track
   unfreezeTrack(trackIndex);
-  
+
   // Create offline context for rendering
-  const offlineContext = new Tone.OfflineContext(2, duration, 44100);
-  
+  // const offlineContext = new Tone.OfflineContext(2, duration, 44100);
+
   // Get the track's part and instrument
   const part = parts.find(p => p.trackIndex === trackIndex);
-  if (!part) return;
-  
+  if (!part) {return;}
+
   const trackName = Array.from(instruments.keys())[trackIndex];
   const { instrument, effectChain } = instruments.get(trackName);
-  
+
   // Create a recorder to capture the track output
   const recorder = new Tone.Recorder();
-  
+
   // Connect instrument to recorder
   if (effectChain && effectChain.length > 0) {
     effectChain[effectChain.length - 1].connect(recorder);
   } else {
     instrument.connect(recorder);
   }
-  
+
   freezeRecorders.set(trackIndex, recorder);
-  
+
   // Start recording
   await recorder.start();
-  
+
   // Play the part once to record it
   part.start(0);
   await Tone.Transport.start();
-  
+
   // Wait for the duration
   await new Promise(resolve => setTimeout(resolve, duration * 1000));
-  
+
   // Stop recording and get the buffer
   const recording = await recorder.stop();
-  
+
   // Create a player for the frozen audio
   const frozenPlayer = new Tone.Player({
     url: recording,
@@ -444,21 +437,21 @@ export async function freezeTrack(trackIndex, duration) {
     loopStart: 0,
     loopEnd: duration
   }).connect(getMasterBus());
-  
+
   // Store the frozen player
   frozenTracks.set(trackIndex, {
     player: frozenPlayer,
     originalPart: part,
     duration: duration
   });
-  
+
   // Mute the original part
   part.mute = true;
-  
+
   // Clean up recorder
   recorder.dispose();
   freezeRecorders.delete(trackIndex);
-  
+
   return frozenPlayer;
 }
 
@@ -468,14 +461,14 @@ export function unfreezeTrack(trackIndex) {
     // Stop and dispose the frozen player
     frozen.player.stop();
     frozen.player.dispose();
-    
+
     // Unmute the original part
     frozen.originalPart.mute = false;
-    
+
     // Remove from frozen tracks
     frozenTracks.delete(trackIndex);
   }
-  
+
   // Clean up any active recorder
   const recorder = freezeRecorders.get(trackIndex);
   if (recorder) {
@@ -495,283 +488,31 @@ export function getFrozenTracks() {
 
 // Live Input Management
 export async function startLiveInput(config = {}) {
-  if (isLiveInputActive) {
-    console.warn('Live input already active');
-    return;
-  }
-
-  try {
-    // Start Tone.js context if not already started
-    if (Tone.context.state !== 'running') {
-      await Tone.start();
-    }
-
-    // Create UserMedia source
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: config.echoCancellation ?? false,
-        noiseSuppression: config.noiseSuppression ?? false,
-        autoGainControl: config.autoGainControl ?? false,
-        latency: 0
-      }
-    });
-
-    // Create Tone.js UserMedia node
-    liveInput = new Tone.UserMedia();
-    await liveInput.open(stream);
-
-    // Create monitoring bus for low-latency monitoring
-    liveInputMonitoringBus = new Tone.Gain(1);
-    
-    // Initialize effect chain
-    updateLiveInputEffects(config.effects || []);
-
-    // Connect routing
-    if (liveInputEffectChain.length > 0) {
-      liveInput.chain(...liveInputEffectChain, liveInputMonitoringBus);
-    } else {
-      liveInput.connect(liveInputMonitoringBus);
-    }
-
-    // Connect to both monitoring and main outputs
-    if (config.monitor !== false) {
-      liveInputMonitoringBus.connect(getMasterBus());
-    }
-
-    isLiveInputActive = true;
-
-    // Measure latency
-    await measureLiveInputLatency();
-    
-    // Update state
-    updateLiveInputState({
-      active: true,
-      latency: liveInputLatency,
-      effectCount: liveInputEffectChain.length
-    });
-
-    return {
-      success: true,
-      latency: liveInputLatency
-    };
-  } catch (error) {
-    console.error('Failed to start live input:', error);
-    throw error;
-  }
+  return startLiveInputModule(config, getMasterBus);
 }
 
 export async function stopLiveInput() {
-  if (!isLiveInputActive) {
-    return;
-  }
-
-  try {
-    // Smooth fade out to prevent pops
-    if (liveInputMonitoringBus) {
-      await liveInputMonitoringBus.gain.rampTo(0, 0.1);
-    }
-
-    // Disconnect and dispose
-    if (liveInput) {
-      liveInput.close();
-      liveInput.dispose();
-      liveInput = null;
-    }
-
-    // Clean up effects
-    liveInputEffectChain.forEach(effect => {
-      effect.disconnect();
-      effect.dispose();
-    });
-    liveInputEffectChain = [];
-
-    if (liveInputMonitoringBus) {
-      liveInputMonitoringBus.disconnect();
-      liveInputMonitoringBus.dispose();
-      liveInputMonitoringBus = null;
-    }
-
-    // Stop any active recording
-    if (liveInputRecorder) {
-      await liveInputRecorder.stop();
-      liveInputRecorder.dispose();
-      liveInputRecorder = null;
-    }
-
-    isLiveInputActive = false;
-    
-    // Update state
-    updateLiveInputState({
-      active: false,
-      latency: 0,
-      recording: false,
-      effectCount: 0
-    });
-  } catch (error) {
-    console.error('Error stopping live input:', error);
-  }
+  return stopLiveInputModule();
 }
 
 export function updateLiveInputEffects(effectsConfig) {
-  if (!liveInput) return;
-
-  // Disconnect existing chain
-  liveInput.disconnect();
-  liveInputEffectChain.forEach(effect => {
-    effect.disconnect();
-    effect.dispose();
-  });
-  liveInputEffectChain = [];
-
-  // Create new effects chain
-  effectsConfig.forEach(effectConfig => {
-    if (availableEffects[effectConfig.type]) {
-      const effect = availableEffects[effectConfig.type]();
-      
-      // Apply effect parameters
-      if (effectConfig.params) {
-        Object.entries(effectConfig.params).forEach(([key, value]) => {
-          if (effect[key] !== undefined) {
-            if (typeof effect[key] === 'object' && effect[key].value !== undefined) {
-              effect[key].value = value;
-            } else {
-              effect[key] = value;
-            }
-          }
-        });
-      }
-
-      // Set wet/dry mix
-      if (effect.wet && effectConfig.mix !== undefined) {
-        effect.wet.value = effectConfig.mix;
-      }
-
-      // Handle special effects like harmonizer
-      if (effectConfig.type === 'harmonizer' && effectConfig.intervals) {
-        effect.setIntervals(effectConfig.intervals);
-      }
-
-      liveInputEffectChain.push(effect);
-    }
-  });
-
-  // Reconnect with new chain
-  if (liveInputEffectChain.length > 0) {
-    liveInput.chain(...liveInputEffectChain, liveInputMonitoringBus);
-  } else {
-    liveInput.connect(liveInputMonitoringBus);
-  }
-  
-  // Update state
-  updateLiveInputState({
-    effectCount: liveInputEffectChain.length
-  });
+  return updateLiveInputEffectsModule(effectsConfig);
 }
 
 export async function measureLiveInputLatency() {
-  if (!liveInput || !isLiveInputActive) return;
-
-  try {
-    // Create test signal
-    const osc = new Tone.Oscillator(1000, 'sine');
-    const envelope = new Tone.AmplitudeEnvelope({
-      attack: 0.001,
-      decay: 0.001,
-      sustain: 0,
-      release: 0.001
-    });
-
-    // Connect test signal
-    osc.connect(envelope);
-    envelope.connect(getMasterBus());
-
-    // Measure round-trip time
-    const startTime = Tone.now();
-    osc.start();
-    envelope.triggerAttackRelease(0.001);
-
-    // Estimate latency based on buffer size and sample rate
-    const bufferSize = Tone.context.baseLatency * Tone.context.sampleRate;
-    const outputLatency = Tone.context.outputLatency || 0;
-    
-    liveInputLatency = Math.round((bufferSize / Tone.context.sampleRate + outputLatency) * 1000);
-
-    // Clean up
-    osc.stop();
-    osc.dispose();
-    envelope.dispose();
-
-    return liveInputLatency;
-  } catch (error) {
-    console.error('Error measuring latency:', error);
-    return 0;
-  }
+  return measureLiveInputLatencyModule();
 }
 
 export async function startLiveInputRecording() {
-  if (!isLiveInputActive || liveInputRecorder) {
-    return null;
-  }
-
-  try {
-    // Create recorder connected to the monitoring bus (post-effects)
-    liveInputRecorder = new Tone.Recorder();
-    liveInputMonitoringBus.connect(liveInputRecorder);
-    
-    // Start recording
-    await liveInputRecorder.start();
-    
-    // Update state
-    updateLiveInputState({
-      recording: true
-    });
-    
-    return true;
-  } catch (error) {
-    console.error('Failed to start recording:', error);
-    return null;
-  }
+  return startLiveInputRecordingModule();
 }
 
 export async function stopLiveInputRecording() {
-  if (!liveInputRecorder) {
-    return null;
-  }
-
-  try {
-    // Stop recording and get the audio buffer
-    const recording = await liveInputRecorder.stop();
-    const audioBuffer = await Tone.context.decodeAudioData(await recording.arrayBuffer());
-    
-    // Convert to Tone.js ToneAudioBuffer
-    const toneBuffer = new Tone.ToneAudioBuffer(audioBuffer);
-    
-    // Clean up recorder
-    liveInputRecorder.dispose();
-    liveInputRecorder = null;
-    
-    // Update state
-    updateLiveInputState({
-      recording: false
-    });
-    
-    return {
-      buffer: toneBuffer,
-      duration: audioBuffer.duration
-    };
-  } catch (error) {
-    console.error('Failed to stop recording:', error);
-    return null;
-  }
+  return stopLiveInputRecordingModule();
 }
 
 export function getLiveInputStatus() {
-  return {
-    active: isLiveInputActive,
-    latency: liveInputLatency,
-    recording: liveInputRecorder !== null,
-    effectCount: liveInputEffectChain.length
-  };
+  return getLiveInputStatusModule();
 }
 
 // Export instruments for visualizer
@@ -782,20 +523,20 @@ export function getInstruments() {
 // Function to reorder effects in a track's effect chain
 export function reorderTrackEffects(trackName, newEffectChain) {
   const instrumentData = instruments.get(trackName);
-  if (!instrumentData) return;
-  
+  if (!instrumentData) {return;}
+
   const { instrument } = instrumentData;
-  
+
   // Disconnect current chain
   instrument.disconnect();
-  
+
   // Reconnect with new order
   if (newEffectChain && newEffectChain.length > 0) {
     instrument.chain(...newEffectChain, getMasterBus());
   } else {
     instrument.connect(getMasterBus());
   }
-  
+
   // Update stored effect chain
   instrumentData.effectChain = newEffectChain;
 }
@@ -809,7 +550,7 @@ export function setHarmonyCallback(callback) {
 function initializeMasterBus() {
   if (!masterBus) {
     masterBus = new Tone.Gain(MASTER_BUS_CONFIG.gain);
-    
+
     // Create a compressor for dynamic control
     if (!masterCompressor) {
       masterCompressor = new Tone.Compressor({
@@ -819,28 +560,28 @@ function initializeMasterBus() {
         release: 0.25
       });
     }
-    
+
     // Create a highpass filter for DC blocking (20Hz cutoff)
     if (!masterHighpass) {
       masterHighpass = new Tone.Filter({
-        type: "highpass",
+        type: 'highpass',
         frequency: 20,
         rolloff: -24
       });
     }
-    
+
     // Create a limiter to prevent clipping
     if (!masterLimiter) {
       masterLimiter = new Tone.Limiter(MASTER_BUS_CONFIG.limiterThreshold);
     }
-    
+
     // Connect master bus through processing chain to destination
     if (masterEffectChain.length > 0) {
       masterBus.chain(...masterEffectChain, masterCompressor, masterHighpass, masterLimiter, Tone.Destination);
     } else {
       masterBus.chain(masterCompressor, masterHighpass, masterLimiter, Tone.Destination);
     }
-    
+
     // Initialize and start health monitoring
     audioHealthMonitor.initialize();
     audioHealthMonitor.startMonitoring();
@@ -852,29 +593,29 @@ function initializeMasterBus() {
 export function applyMasterEffectPreset(presetData) {
   // Initialize master bus if needed
   initializeMasterBus();
-  
+
   // Clean up old effects
   masterEffectChain.forEach(effect => {
     effect.disconnect();
     effect.dispose();
   });
   masterEffectChain = [];
-  
+
   // If no preset data or effects, just connect through processing chain
   if (!presetData || !presetData.effects || presetData.effects.length === 0) {
     masterBus.disconnect();
     masterBus.chain(masterCompressor, masterHighpass, masterLimiter, Tone.Destination);
     return;
   }
-  
+
   // Create new effects chain
   presetData.effects.forEach(effectConfig => {
     const effectType = effectConfig.type;
     const params = effectConfig.params || {};
-    
+
     if (availableEffects[effectType]) {
       const effect = availableEffects[effectType]();
-      
+
       // Apply parameters
       if (effectType === 'harmonizer') {
         // Special handling for harmonizer
@@ -896,7 +637,7 @@ export function applyMasterEffectPreset(presetData) {
         // For standard Tone.js effects
         try {
           effect.set(params);
-        } catch (e) {
+        } catch {
           // Fallback to manual parameter setting
           Object.keys(params).forEach(param => {
             if (effect[param] && effect[param].value !== undefined) {
@@ -912,11 +653,11 @@ export function applyMasterEffectPreset(presetData) {
           }
         });
       }
-      
+
       masterEffectChain.push(effect);
     }
   });
-  
+
   // Reconnect with new effect chain through processing chain
   masterBus.disconnect();
   if (masterEffectChain.length > 0) {

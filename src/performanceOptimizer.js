@@ -16,7 +16,7 @@ export class PerformanceOptimizer {
       this.workletSupported = true;
       await this.loadWorkletProcessors();
     }
-    
+
     // Start CPU monitoring
     this.startCPUMonitoring();
   }
@@ -25,15 +25,15 @@ export class PerformanceOptimizer {
     try {
       // Load custom worklet processors for CPU-intensive effects
       const audioContext = new AudioContext();
-      
+
       // Load reverb processor worklet
       await audioContext.audioWorklet.addModule('/src/worklets/reverb-processor.js');
       this.workletProcessors.set('reverb', 'reverb-processor');
-      
+
       // Load granular synthesis processor worklet
       await audioContext.audioWorklet.addModule('/src/worklets/granular-processor.js');
       this.workletProcessors.set('granular', 'granular-processor');
-      
+
       audioContext.close();
     } catch (error) {
       console.warn('Failed to load AudioWorklet processors:', error);
@@ -42,8 +42,8 @@ export class PerformanceOptimizer {
   }
 
   startCPUMonitoring() {
-    if (this.monitoringInterval) return;
-    
+    if (this.monitoringInterval) {return;}
+
     this.monitoringInterval = setInterval(() => {
       this.measureCPUUsage();
     }, 1000);
@@ -59,13 +59,13 @@ export class PerformanceOptimizer {
           entries.forEach(entry => {
             totalDuration += entry.duration;
           });
-          
+
           // Estimate CPU usage based on long tasks
           this.cpuUsage = Math.min(100, (totalDuration / 1000) * 100);
         });
-        
+
         observer.observe({ entryTypes: ['measure', 'navigation'] });
-        
+
         // Cleanup after measurement
         setTimeout(() => observer.disconnect(), 100);
       } catch (error) {
@@ -78,8 +78,8 @@ export class PerformanceOptimizer {
   shouldOffloadEffect(effectType) {
     // Determine if effect should be offloaded to AudioWorklet
     const cpuIntensiveEffects = ['reverb', 'freezeReverb', 'granular_pad', 'chorus', 'phaser'];
-    
-    return this.workletSupported && 
+
+    return this.workletSupported &&
            cpuIntensiveEffects.includes(effectType) &&
            this.cpuUsage > 40; // Start offloading at 40% CPU
   }
@@ -89,19 +89,19 @@ export class PerformanceOptimizer {
       // Create AudioWorklet node for CPU-intensive effect
       try {
         const workletNode = new AudioWorkletNode(
-          audioContext, 
+          audioContext,
           this.workletProcessors.get(effectType),
           { processorOptions: params }
         );
-        
+
         // Add wet/dry control
         const wetGain = audioContext.createGain();
         const dryGain = audioContext.createGain();
         const outputGain = audioContext.createGain();
-        
+
         wetGain.gain.value = params.wet || 0.5;
         dryGain.gain.value = 1 - (params.wet || 0.5);
-        
+
         // Create effect chain
         const input = audioContext.createGain();
         input.connect(dryGain);
@@ -109,7 +109,7 @@ export class PerformanceOptimizer {
         workletNode.connect(wetGain);
         wetGain.connect(outputGain);
         dryGain.connect(outputGain);
-        
+
         return {
           input,
           output: outputGain,
@@ -123,7 +123,7 @@ export class PerformanceOptimizer {
         return null;
       }
     }
-    
+
     return null; // Fall back to regular Tone.js effect
   }
 
@@ -134,17 +134,17 @@ export class PerformanceOptimizer {
       reorderedChains: new Map(),
       workletOffloads: new Set()
     };
-    
+
     // Group similar effects to reduce processing overhead
     instruments.forEach((instrument, trackName) => {
       const { effectChain } = instrument;
-      
+
       if (effectChain && effectChain.length > 0) {
         // Identify candidates for merging
-        const reverbEffects = effectChain.filter(e => 
+        const reverbEffects = effectChain.filter(e =>
           e.constructor.name.includes('Reverb')
         );
-        
+
         if (reverbEffects.length > 1) {
           // Merge multiple reverbs into one
           optimizations.mergedEffects.set(trackName, {
@@ -152,7 +152,7 @@ export class PerformanceOptimizer {
             count: reverbEffects.length
           });
         }
-        
+
         // Reorder effects for optimal processing
         // Place dynamics before time-based effects
         const optimizedOrder = this.getOptimalEffectOrder(effectChain);
@@ -161,7 +161,7 @@ export class PerformanceOptimizer {
         }
       }
     });
-    
+
     return optimizations;
   }
 
@@ -174,7 +174,7 @@ export class PerformanceOptimizer {
       modulation: ['Chorus', 'Phaser', 'Tremolo'],
       timeBased: ['Delay', 'Reverb', 'Echo']
     };
-    
+
     // Categorize effects
     const categorized = effectChain.map(effect => {
       const effectName = effect.constructor.name;
@@ -185,18 +185,18 @@ export class PerformanceOptimizer {
       }
       return { effect, category: 'other' };
     });
-    
+
     // Sort by optimal order
     const order = ['dynamics', 'eq', 'distortion', 'modulation', 'timeBased', 'other'];
-    const sorted = categorized.sort((a, b) => 
+    const sorted = categorized.sort((a, b) =>
       order.indexOf(a.category) - order.indexOf(b.category)
     );
-    
+
     // Check if reordering is needed
-    const needsReorder = sorted.some((item, index) => 
+    const needsReorder = sorted.some((item, index) =>
       item.effect !== effectChain[index]
     );
-    
+
     return needsReorder ? sorted.map(item => item.effect) : null;
   }
 

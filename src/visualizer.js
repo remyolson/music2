@@ -55,13 +55,13 @@ export function initialize() {
 }
 
 export function update(musicData) {
-  if (!svg) return;
+  if (!svg) {return;}
 
   currentData = musicData;
 
   svg.innerHTML = '';
 
-  if (!musicData) return;
+  if (!musicData) {return;}
 
   // Update track count display
   if (trackCountElement) {
@@ -222,12 +222,12 @@ function drawTracks(musicData, pixelsPerBeat) {
     trackLabel.textContent = track.name;
     trackLabel.style.pointerEvents = 'none';
     trackGroup.appendChild(trackLabel);
-    
+
     // Add freeze button for the track
     const freezeButton = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     freezeButton.setAttribute('class', 'freeze-button');
     freezeButton.style.cursor = 'pointer';
-    
+
     const freezeBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     freezeBg.setAttribute('x', trackWidth - 40);
     freezeBg.setAttribute('y', yOffset - 2);
@@ -237,7 +237,7 @@ function drawTracks(musicData, pixelsPerBeat) {
     freezeBg.setAttribute('fill', isTrackFrozen(trackIndex) ? '#00ff88' : '#404040');
     freezeBg.setAttribute('stroke', '#606060');
     freezeBg.setAttribute('stroke-width', '1');
-    
+
     const freezeText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     freezeText.setAttribute('x', trackWidth - 22);
     freezeText.setAttribute('y', yOffset + 12);
@@ -246,10 +246,10 @@ function drawTracks(musicData, pixelsPerBeat) {
     freezeText.setAttribute('text-anchor', 'middle');
     freezeText.textContent = isTrackFrozen(trackIndex) ? 'UNFR' : 'FRZ';
     freezeText.style.pointerEvents = 'none';
-    
+
     freezeButton.appendChild(freezeBg);
     freezeButton.appendChild(freezeText);
-    
+
     // Add click handler for freeze button
     freezeButton.addEventListener('click', async (e) => {
       e.stopPropagation(); // Prevent track selection
@@ -262,7 +262,7 @@ function drawTracks(musicData, pixelsPerBeat) {
       // Refresh the visualizer to update button state
       update(musicData);
     });
-    
+
     trackGroup.appendChild(freezeButton);
 
     tracksGroup.appendChild(trackGroup);
@@ -292,13 +292,13 @@ function startAnimation() {
   let prevLoopedPosition = 0;
 
   function animate() {
-    if (!playhead || !currentData) return;
+    if (!playhead || !currentData) {return;}
 
     const transport = getTransport();
     // Transport.seconds is ahead by lookAhead; compensate so visual matches audible output
     const lookAhead = Tone.getContext().lookAhead || 0;
     let seconds = transport.seconds - lookAhead;
-    if (seconds < 0) seconds = 0;
+    if (seconds < 0) {seconds = 0;}
     const bpm = transport.bpm.value;
     const secondsPerBeat = 60 / bpm;
     const totalBeats = seconds / secondsPerBeat;
@@ -343,17 +343,17 @@ function getLoopEnd(musicData) {
     const notes = expandNotesWithRepeat(track.notes);
     notes.forEach(note => {
       const endTime = note.time + note.duration;
-      if (endTime > maxTime) maxTime = endTime;
+      if (endTime > maxTime) {maxTime = endTime;}
     });
   });
   return Math.ceil(maxTime);
 }
 
 function handleTrackHover(trackIndex, isHovering) {
-  if (!svg) return;
+  if (!svg) {return;}
 
   const track = svg.querySelector(`.track[data-track-index="${trackIndex}"]`);
-  if (!track) return;
+  if (!track) {return;}
 
   if (isHovering) {
     track.classList.add('track-hover');
@@ -363,7 +363,7 @@ function handleTrackHover(trackIndex, isHovering) {
 }
 
 function handleTrackClick(trackIndex) {
-  if (!jsonEditor || !currentData) return;
+  if (!jsonEditor || !currentData) {return;}
 
   // Toggle selection set
   if (selectedTracks.has(trackIndex)) {
@@ -401,7 +401,7 @@ function handleTrackClick(trackIndex) {
 }
 
 function findTrackNameLine(trackIndex) {
-  if (!jsonEditor) return -1;
+  if (!jsonEditor) {return -1;}
   const lines = jsonEditor.value.split('\n');
   let currentTrackIndex = -1;
   let insideTracks = false;
@@ -424,7 +424,7 @@ function findTrackNameLine(trackIndex) {
 }
 
 function highlightTrackNameInEditor(trackIndex) {
-  if (!jsonEditor) return;
+  if (!jsonEditor) {return;}
   const lines = jsonEditor.value.split('\n');
   let pos = 0;
   let currentTrackIndex = -1;
@@ -437,7 +437,7 @@ function highlightTrackNameInEditor(trackIndex) {
       continue;
     }
     if (insideTracks) {
-      if (line.trim().startsWith('{')) currentTrackIndex++;
+      if (line.trim().startsWith('{')) {currentTrackIndex++;}
       if (currentTrackIndex === trackIndex && line.includes('"name"')) {
         const start = pos + line.indexOf(':') + 2; // start of value
         const end = line.endsWith(',') ? pos + line.length - 1 : pos + line.length;
@@ -453,38 +453,38 @@ function highlightTrackNameInEditor(trackIndex) {
 function handlePianoRollClick(event) {
   // Check if click is on a track element (note, track background, etc)
   const clickedElement = event.target;
-  const isTrackElement = clickedElement.classList.contains('note') || 
+  const isTrackElement = clickedElement.classList.contains('note') ||
                         clickedElement.classList.contains('track-bg') ||
                         clickedElement.closest('.track');
-  
+
   // If clicked on a track element, let the track handlers handle it
   if (isTrackElement) {
     return;
   }
-  
+
   // Get click position relative to SVG
   const pt = svg.createSVGPoint();
   pt.x = event.clientX;
   pt.y = event.clientY;
-  
+
   // Transform to SVG coordinate space
   const svgPt = pt.matrixTransform(svg.getScreenCTM().inverse());
-  
+
   // Convert X position to beats
   const clickedX = svgPt.x;
   const pixelsPerBeat = BASE_PIXELS_PER_BEAT * zoomLevel;
   const clickedBeat = Math.max(0, (clickedX - MARGIN) / pixelsPerBeat);
-  
+
   // Get transport and calculate time in seconds
   const transport = getTransport();
   const bpm = transport.bpm.value;
   const secondsPerBeat = 60 / bpm;
   const clickedTime = clickedBeat * secondsPerBeat;
-  
+
   // Get loop end to constrain seek position
   const loopEnd = getLoopEnd(currentData);
   const loopEndTime = loopEnd * secondsPerBeat;
-  
+
   // Set transport position (constrain to loop bounds if looping)
   if (loopEnd > 0 && clickedTime >= loopEndTime) {
     // If clicking beyond loop end, wrap to start

@@ -11,9 +11,9 @@ export class EffectPresetUI {
 
   initialize(containerId, onPresetSelect) {
     this.onPresetSelect = onPresetSelect;
-    
+
     const container = document.getElementById(containerId);
-    if (!container) return;
+    if (!container) {return;}
 
     // Create preset dropdown button
     this.presetDropdown = document.createElement('div');
@@ -30,7 +30,7 @@ export class EffectPresetUI {
     this.presetMenu = document.createElement('div');
     this.presetMenu.className = 'preset-menu';
     this.presetMenu.style.display = 'none';
-    
+
     this.buildPresetMenu();
 
     // Add to container
@@ -47,9 +47,9 @@ export class EffectPresetUI {
 
     // Add categories
     for (const [category, presetIds] of Object.entries(categories)) {
-      menuHTML += `<div class="preset-category">`;
+      menuHTML += '<div class="preset-category">';
       menuHTML += `<div class="preset-category-header">${category}</div>`;
-      
+
       presetIds.forEach(presetId => {
         const preset = effectPresets[presetId];
         if (preset) {
@@ -61,8 +61,8 @@ export class EffectPresetUI {
           `;
         }
       });
-      
-      menuHTML += `</div>`;
+
+      menuHTML += '</div>';
     }
 
     // Add custom presets section
@@ -79,7 +79,7 @@ export class EffectPresetUI {
 
   setupEventListeners() {
     const dropdownBtn = document.getElementById('preset-dropdown-btn');
-    
+
     // Toggle menu
     dropdownBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -121,7 +121,7 @@ export class EffectPresetUI {
 
   openMenu() {
     this.presetMenu.style.display = 'block';
-    
+
     // Position menu below dropdown
     const rect = this.presetDropdown.getBoundingClientRect();
     this.presetMenu.style.top = `${rect.bottom + 5}px`;
@@ -134,7 +134,7 @@ export class EffectPresetUI {
 
   selectPreset(presetId) {
     this.selectedPreset = presetId;
-    
+
     // Update button label
     const preset = effectPresets[presetId] || getAllPresets()[presetId];
     if (preset) {
@@ -153,12 +153,12 @@ export class EffectPresetUI {
 
   saveCurrentEffects() {
     const name = prompt('Enter a name for this preset:');
-    if (!name) return;
+    if (!name) {return;}
 
     // Get current effects from the active track or global effects
     // This would need to be implemented based on your current effect chain
     console.log('Saving preset:', name);
-    
+
     // Refresh menu to show new custom preset
     this.buildPresetMenu();
   }

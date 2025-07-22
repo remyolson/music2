@@ -3,7 +3,7 @@
  */
 export const INSTRUMENT_TYPES = [
   'synth_lead',
-  'synth_bass', 
+  'synth_bass',
   'piano',
   'strings',
   'brass',
@@ -75,7 +75,7 @@ export const INSTRUMENT_DEFAULTS = {
     },
     portamento: 0
   },
-  
+
   // Acoustic instruments
   piano: {
     oscillator: { type: 'fmsine' }
@@ -88,7 +88,7 @@ export const INSTRUMENT_DEFAULTS = {
     filterFrequency: 2000,
     filterRolloff: -24
   },
-  
+
   // Drums
   drums_kit: {
     kick: {
@@ -112,7 +112,7 @@ export const INSTRUMENT_DEFAULTS = {
       }
     }
   },
-  
+
   // Vocoder settings
   vocoder_synth: {
     formantFrequencies: [700, 1220, 2600, 3200, 4400],
@@ -126,7 +126,7 @@ export const INSTRUMENT_DEFAULTS = {
       wet: 0.2
     }
   },
-  
+
   // Granular pad settings
   granular_pad: {
     oscillator: {

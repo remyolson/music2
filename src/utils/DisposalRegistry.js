@@ -20,7 +20,7 @@ export class DisposalRegistry {
       throw new Error(`Registry ${this.name} has already been disposed`);
     }
 
-    if (!disposable) return disposable;
+    if (!disposable) {return disposable;}
 
     this.disposables.add(disposable);
 
@@ -57,12 +57,12 @@ export class DisposalRegistry {
    */
   registerListener(target, event, handler, options) {
     target.addEventListener(event, handler, options);
-    
+
     // Create a disposable that removes the listener
     const disposable = {
       dispose: () => target.removeEventListener(event, handler, options)
     };
-    
+
     this.register(disposable);
     return disposable;
   }
@@ -74,10 +74,10 @@ export class DisposalRegistry {
    * @param {boolean} isInterval - Whether it's an interval (true) or timeout (false)
    */
   registerTimer(callback, delay, isInterval = false) {
-    const id = isInterval ? 
-      setInterval(callback, delay) : 
+    const id = isInterval ?
+      setInterval(callback, delay) :
       setTimeout(callback, delay);
-    
+
     const disposable = {
       dispose: () => {
         if (isInterval) {
@@ -87,7 +87,7 @@ export class DisposalRegistry {
         }
       }
     };
-    
+
     this.register(disposable);
     return disposable;
   }
@@ -106,7 +106,7 @@ export class DisposalRegistry {
    * Dispose a specific object and remove it from tracking
    */
   disposeOne(disposable) {
-    if (!this.disposables.has(disposable)) return;
+    if (!this.disposables.has(disposable)) {return;}
 
     try {
       // Try custom dispose callback first
@@ -134,11 +134,11 @@ export class DisposalRegistry {
    * Dispose all registered objects
    */
   dispose() {
-    if (this.disposed) return;
+    if (this.disposed) {return;}
 
     // Convert to array to avoid iterator invalidation
     const disposableArray = Array.from(this.disposables);
-    
+
     // Dispose in reverse order (LIFO)
     for (let i = disposableArray.length - 1; i >= 0; i--) {
       this.disposeOne(disposableArray[i]);

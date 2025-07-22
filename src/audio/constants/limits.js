@@ -5,7 +5,7 @@ export const SAFE_LIMITS = {
   feedback: 0.7,      // Maximum feedback to prevent runaway
   wet: 0.6,          // Maximum wet level
   reverbDecay: 10,   // Maximum reverb decay time
-  delayTime: 2,      // Maximum delay time in seconds
+  delayTime: 2      // Maximum delay time in seconds
 };
 
 /**

@@ -2,7 +2,7 @@ import { MusicDataSchema } from './schemas.js';
 
 export function validate(jsonString) {
   let parsedData;
-  
+
   try {
     parsedData = JSON.parse(jsonString);
   } catch (error) {
@@ -11,21 +11,21 @@ export function validate(jsonString) {
       error: `JSON Syntax Error: ${error.message}`
     };
   }
-  
+
   const result = MusicDataSchema.safeParse(parsedData);
-  
+
   if (!result.success) {
     const errors = result.error.errors.map(err => {
       const path = err.path.join('.');
       return `${path}: ${err.message}`;
     });
-    
+
     return {
       success: false,
       error: `Validation Error:\n${errors.join('\n')}`
     };
   }
-  
+
   return {
     success: true,
     data: result.data

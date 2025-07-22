@@ -15,14 +15,14 @@ export class MemoryMonitor {
    * @param {number} intervalMs - Measurement interval in milliseconds
    */
   start(intervalMs = 5000) {
-    if (this.isMonitoring) return;
-    
+    if (this.isMonitoring) {return;}
+
     this.isMonitoring = true;
     this.measurements = [];
-    
+
     // Take initial measurement
     this.measure();
-    
+
     // Set up periodic measurements
     this.interval = setInterval(() => {
       this.measure();
@@ -76,7 +76,7 @@ export class MemoryMonitor {
     // you'd track node creation/disposal
     if (window.Tone && Tone.context) {
       // Estimate based on context state
-      return Tone.context.state === 'running' ? 
+      return Tone.context.state === 'running' ?
         Object.keys(Tone).filter(k => k.includes('Node')).length : 0;
     }
     return 0;
@@ -89,17 +89,17 @@ export class MemoryMonitor {
     // Get all elements
     const elements = document.querySelectorAll('*');
     let count = 0;
-    
+
     // Common event types to check
     const eventTypes = ['click', 'input', 'change', 'mousedown', 'keydown'];
-    
+
     elements.forEach(el => {
       eventTypes.forEach(type => {
         // This is an approximation - actual listeners are not directly accessible
-        if (el[`on${type}`]) count++;
+        if (el[`on${type}`]) {count++;}
       });
     });
-    
+
     return count;
   }
 
@@ -107,7 +107,7 @@ export class MemoryMonitor {
    * Detect potential memory leaks
    */
   detectLeaks() {
-    if (this.measurements.length < 10) return;
+    if (this.measurements.length < 10) {return;}
 
     const recent = this.measurements.slice(-10);
     const memoryGrowth = recent[recent.length - 1].usedJSHeapSize - recent[0].usedJSHeapSize;
@@ -128,8 +128,8 @@ export class MemoryMonitor {
    * Register an object for disposal tracking
    */
   registerDisposable(obj, disposeMethod = 'dispose') {
-    if (!obj) return;
-    
+    if (!obj) {return;}
+
     this.disposables.set(obj, {
       disposeMethod,
       stackTrace: new Error().stack,
@@ -148,7 +148,7 @@ export class MemoryMonitor {
    * Get memory statistics
    */
   getStats() {
-    if (this.measurements.length === 0) return null;
+    if (this.measurements.length === 0) {return null;}
 
     const latest = this.measurements[this.measurements.length - 1];
     const oldest = this.measurements[0];
@@ -169,7 +169,7 @@ export class MemoryMonitor {
    */
   generateReport() {
     const stats = this.getStats();
-    if (!stats) return 'No measurements available';
+    if (!stats) {return 'No measurements available';}
 
     return `
 Memory Monitor Report
@@ -190,7 +190,7 @@ export const memoryMonitor = new MemoryMonitor();
 // Auto-start in development mode
 if (import.meta.env.DEV) {
   memoryMonitor.start();
-  
+
   // Log report every minute in development
   setInterval(() => {
     console.log(memoryMonitor.generateReport());

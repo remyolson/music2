@@ -20,7 +20,7 @@ window.reorderTrackEffects = reorderTrackEffects;
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('JSON Music Codec - Initializing...');
-  
+
   // Add global error handler
   window.addEventListener('error', (event) => {
     console.error('Global error:', event.error);
@@ -31,47 +31,47 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   initializeVisualizer();
-  
+
   // Initialize audio visualizer
   const audioCanvas = document.getElementById('audio-spectrum');
   if (audioCanvas) {
     initAudioVisualizer(audioCanvas);
   }
-  
+
   // Initialize audio health monitor visual
   audioHealthMonitor.createVisualMeter('audio-health-meter');
 
   // Initialize enhanced visualizers
   waveformViz = new WaveformVisualizer('waveform-viz');
   waveformViz.initialize();
-  
+
   formantViz = new FormantVisualizer('formant-viz');
   formantViz.initialize();
-  
+
   effectChainViz = new EffectChainVisualizer('effect-chain-viz');
   effectChainViz.initialize();
-  
+
   spectrumViz = new SpectrumAnalyzer('spectrum-viz');
   spectrumViz.initialize();
-  
+
   harmonyViz = new HarmonyVisualizer('harmony-viz');
   harmonyViz.initialize();
-  
+
   // Set up visualizer dropdown
   const visualizerSelect = document.getElementById('visualizer-select');
   if (visualizerSelect) {
     visualizerSelect.addEventListener('change', (e) => {
       const selectedViz = e.target.value;
-      
+
       // Hide all visualizers
       document.getElementById('audio-spectrum').style.display = 'none';
       document.getElementById('waveform-viz').style.display = 'none';
       document.getElementById('formant-viz').style.display = 'none';
       document.getElementById('spectrum-viz').style.display = 'none';
       document.getElementById('harmony-viz').style.display = 'none';
-      
+
       // Show selected visualizer
-      switch(selectedViz) {
+      switch (selectedViz) {
         case 'spectrum':
           document.getElementById('audio-spectrum').style.display = 'block';
           break;
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
-  
+
   // Set up harmony visualization callback
   setHarmonyCallback((noteData) => {
     if (harmonyViz) {
@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
   subscribe((musicData) => {
     updateAudioEngine(musicData);
     updateVisualizer(musicData);
-    
+
     // Update effect chain visualization
     if (effectChainViz) {
       const instruments = getInstruments();
@@ -129,22 +129,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   playButton.addEventListener('click', async () => {
     await play();
-    
+
     // Start visualizers
-    if (waveformViz) waveformViz.start();
-    if (formantViz) formantViz.start();
-    if (spectrumViz) spectrumViz.start();
-    if (harmonyViz) harmonyViz.start();
+    if (waveformViz) {waveformViz.start();}
+    if (formantViz) {formantViz.start();}
+    if (spectrumViz) {spectrumViz.start();}
+    if (harmonyViz) {harmonyViz.start();}
   });
 
   stopButton.addEventListener('click', () => {
     stop();
-    
+
     // Stop visualizers
-    if (waveformViz) waveformViz.stop();
-    if (formantViz) formantViz.stop();
-    if (spectrumViz) spectrumViz.stop();
-    if (harmonyViz) harmonyViz.stop();
+    if (waveformViz) {waveformViz.stop();}
+    if (formantViz) {formantViz.stop();}
+    if (spectrumViz) {spectrumViz.stop();}
+    if (harmonyViz) {harmonyViz.stop();}
   });
 
   copyButton.addEventListener('click', () => {
@@ -183,21 +183,21 @@ document.addEventListener('DOMContentLoaded', () => {
   saveButton.addEventListener('click', () => {
     const jsonEditor = document.getElementById('json-editor');
     const jsonText = jsonEditor.value;
-    
+
     try {
       // Parse JSON to get the title
       const musicData = JSON.parse(jsonText);
       const title = musicData.title || 'untitled';
-      
+
       // Sanitize filename - remove special characters and limit length
       const sanitizedTitle = title
         .replace(/[^a-z0-9\s-]/gi, '') // Remove special chars
         .replace(/\s+/g, '-') // Replace spaces with hyphens
         .toLowerCase()
         .substring(0, 50); // Limit length
-      
+
       const filename = `${sanitizedTitle}.json`;
-      
+
       // Create blob and download link
       const blob = new Blob([jsonText], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -205,10 +205,10 @@ document.addEventListener('DOMContentLoaded', () => {
       a.href = url;
       a.download = filename;
       a.click();
-      
+
       // Clean up
       URL.revokeObjectURL(url);
-      
+
       // Visual feedback
       const originalText = saveButton.textContent;
       saveButton.textContent = 'Saved!';
@@ -231,33 +231,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
   fileInput.addEventListener('change', (event) => {
     const file = event.target.files[0];
-    if (!file) return;
-    
+    if (!file) {return;}
+
     const reader = new FileReader();
-    
+
     reader.onload = (e) => {
       const content = e.target.result;
       const jsonEditor = document.getElementById('json-editor');
-      
+
       try {
         // Validate it's proper JSON
         const parsed = JSON.parse(content);
         // Format with 2-space indentation
         const formatted = JSON.stringify(parsed, null, 2);
-        
+
         // Clear any track selections
         selectedTracks.clear();
         document.querySelectorAll('.track-selected').forEach(el => {
           el.classList.remove('track-selected');
         });
-        
+
         // Set the content
         jsonEditor.value = formatted;
-        
+
         // Trigger input event to validate and update
         const inputEvent = new Event('input', { bubbles: true });
         jsonEditor.dispatchEvent(inputEvent);
-        
+
         // Visual feedback
         const originalText = loadButton.textContent;
         loadButton.textContent = 'Loaded!';
@@ -266,11 +266,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 2000);
       } catch (err) {
         console.error('Failed to load file:', err);
-        
+
         // Show error in error panel
         const errorPanel = document.getElementById('error-panel');
         errorPanel.innerHTML = `<div class="error-message">Failed to load file: ${err.message}</div>`;
-        
+
         // Visual feedback
         const originalText = loadButton.textContent;
         loadButton.textContent = 'Error!';
@@ -279,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 2000);
       }
     };
-    
+
     reader.onerror = () => {
       console.error('Failed to read file');
       const originalText = loadButton.textContent;
@@ -288,9 +288,9 @@ document.addEventListener('DOMContentLoaded', () => {
         loadButton.textContent = originalText;
       }, 2000);
     };
-    
+
     reader.readAsText(file);
-    
+
     // Reset the input so the same file can be loaded again
     event.target.value = '';
   });

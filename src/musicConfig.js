@@ -210,7 +210,7 @@ export const effectChainPresets = {
       }
     }
   },
-  
+
   // Ambient drone pad
   ambientDrone: {
     name: 'Ambient Drone',
@@ -230,7 +230,7 @@ export const effectChainPresets = {
       }
     }
   },
-  
+
   // Shimmering pad
   shimmerPad: {
     name: 'Shimmer Pad',
@@ -253,7 +253,7 @@ export const effectChainPresets = {
       shimmer: 0.7
     }
   },
-  
+
   // Dark cinematic pad
   cinematicDark: {
     name: 'Cinematic Dark',
@@ -274,7 +274,7 @@ export const effectChainPresets = {
       }
     }
   },
-  
+
   // Ethereal pad
   ethereal: {
     name: 'Ethereal',
@@ -304,18 +304,18 @@ export const availableEffectTypes = Object.keys(effects);
 export const effectDescriptions = effects;
 
 export function generateAIPrompt() {
-  const instrumentList = Object.entries(instruments).map(([key, inst]) => 
+  const instrumentList = Object.entries(instruments).map(([key, inst]) =>
     `  - "${key}": ${inst.description}${inst.validValues ? ` (accepts: ${inst.validValues.join(', ')})` : ''}`
   ).join('\n');
-  
-  const effectList = Object.entries(effects).map(([key, eff]) => 
+
+  const effectList = Object.entries(effects).map(([key, eff]) =>
     `  - "${key}": ${eff.description}`
   ).join('\n');
-  
-  const effectPresetList = Object.entries(effectChainPresets).map(([key, preset]) => 
+
+  const effectPresetList = Object.entries(effectChainPresets).map(([key, preset]) =>
     `  - "${key}": ${preset.description}`
   ).join('\n');
-  
+
   return `You are an AI assistant for JSON Music Codec.
 
 Your task:

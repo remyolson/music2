@@ -13,7 +13,7 @@ export class WaveformVisualizer {
   }
 
   initialize() {
-    if (!this.container) return;
+    if (!this.container) {return;}
 
     // Create canvas
     this.canvas = document.createElement('canvas');
@@ -40,7 +40,7 @@ export class WaveformVisualizer {
   }
 
   start() {
-    if (this.isActive) return;
+    if (this.isActive) {return;}
     this.isActive = true;
     this.draw();
   }
@@ -53,7 +53,7 @@ export class WaveformVisualizer {
   }
 
   draw() {
-    if (!this.isActive) return;
+    if (!this.isActive) {return;}
 
     this.animationId = requestAnimationFrame(() => this.draw());
 
@@ -120,7 +120,7 @@ export class FormantVisualizer {
   }
 
   initialize() {
-    if (!this.container) return;
+    if (!this.container) {return;}
 
     // Create canvas
     this.canvas = document.createElement('canvas');
@@ -147,7 +147,7 @@ export class FormantVisualizer {
   }
 
   start() {
-    if (this.isActive) return;
+    if (this.isActive) {return;}
     this.isActive = true;
     this.draw();
   }
@@ -160,7 +160,7 @@ export class FormantVisualizer {
   }
 
   draw() {
-    if (!this.isActive) return;
+    if (!this.isActive) {return;}
 
     this.animationId = requestAnimationFrame(() => this.draw());
 
@@ -245,7 +245,7 @@ export class EffectChainVisualizer {
   }
 
   initialize() {
-    if (!this.container) return;
+    if (!this.container) {return;}
 
     // Create effect chain container
     const chainContainer = document.createElement('div');
@@ -257,17 +257,17 @@ export class EffectChainVisualizer {
   }
 
   updateEffectChains(instruments) {
-    if (!this.container) return;
-    
+    if (!this.container) {return;}
+
     this.effectChains.clear();
     const chainContainer = this.container.querySelector('.effect-chain-container');
-    if (!chainContainer) return;
-    
+    if (!chainContainer) {return;}
+
     chainContainer.innerHTML = '';
 
     instruments.forEach((instrumentData, trackName) => {
       const { effectChain } = instrumentData;
-      if (!effectChain || effectChain.length === 0) return;
+      if (!effectChain || effectChain.length === 0) {return;}
 
       // Create track effect chain visualization
       const trackChain = document.createElement('div');
@@ -348,10 +348,10 @@ export class EffectChainVisualizer {
   }
 
   handleDrop(e) {
-    if (!this.draggedEffect) return;
+    if (!this.draggedEffect) {return;}
 
     const dropTarget = e.target.closest('.effect-node');
-    if (!dropTarget) return;
+    if (!dropTarget) {return;}
 
     const targetTrackName = dropTarget.dataset.trackName;
     const targetIndex = parseInt(dropTarget.dataset.effectIndex);
@@ -368,7 +368,7 @@ export class EffectChainVisualizer {
 
   reorderEffects(trackName, fromIndex, toIndex) {
     const effectChain = this.effectChains.get(trackName);
-    if (!effectChain) return;
+    if (!effectChain) {return;}
 
     // Reorder the effects
     const [movedEffect] = effectChain.splice(fromIndex, 1);
@@ -403,7 +403,7 @@ export class SpectrumAnalyzer {
   }
 
   initialize() {
-    if (!this.container) return;
+    if (!this.container) {return;}
 
     // Create canvas
     this.canvas = document.createElement('canvas');
@@ -431,7 +431,7 @@ export class SpectrumAnalyzer {
   }
 
   start() {
-    if (this.isActive) return;
+    if (this.isActive) {return;}
     this.isActive = true;
     this.draw();
   }
@@ -444,7 +444,7 @@ export class SpectrumAnalyzer {
   }
 
   draw() {
-    if (!this.isActive) return;
+    if (!this.isActive) {return;}
 
     this.animationId = requestAnimationFrame(() => this.draw());
 
@@ -505,7 +505,7 @@ export class HarmonyVisualizer {
   }
 
   initialize() {
-    if (!this.container) return;
+    if (!this.container) {return;}
 
     // Create canvas
     this.canvas = document.createElement('canvas');
@@ -528,7 +528,7 @@ export class HarmonyVisualizer {
   }
 
   start() {
-    if (this.isActive) return;
+    if (this.isActive) {return;}
     this.isActive = true;
     this.draw();
   }
@@ -542,11 +542,11 @@ export class HarmonyVisualizer {
 
   // Update harmony data from playing notes
   updateHarmonies(noteData) {
-    if (!noteData) return;
-    
+    if (!noteData) {return;}
+
     const { trackName, note, time } = noteData;
     const key = `${trackName}-${time}`;
-    
+
     if (note.harmonize && note.harmonize.length > 0) {
       this.activeNotes.set(key, {
         rootNote: note.value,
@@ -558,7 +558,7 @@ export class HarmonyVisualizer {
         trackName
       });
     }
-    
+
     // Clean up expired notes
     const now = Date.now();
     for (const [k, v] of this.activeNotes) {
@@ -569,7 +569,7 @@ export class HarmonyVisualizer {
   }
 
   draw() {
-    if (!this.isActive) return;
+    if (!this.isActive) {return;}
 
     this.animationId = requestAnimationFrame(() => this.draw());
 
@@ -619,7 +619,7 @@ export class HarmonyVisualizer {
       y += noteHeight + 10;
 
       // Stop drawing if we run out of space
-      if (y > height - noteHeight) break;
+      if (y > height - noteHeight) {break;}
     }
   }
 

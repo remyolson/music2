@@ -2,7 +2,7 @@
  * Effect Factory - Creates and manages audio effects
  */
 import * as Tone from '../../../node_modules/tone/build/esm/index.js';
-import { 
+import {
   EFFECT_DEFAULTS,
   FREEZE_REVERB_CONFIG,
   HARMONIZER_PRESETS,
@@ -31,9 +31,9 @@ export function createSafeEffect(type, params = {}) {
   if (params.delayTime !== undefined) {
     params.delayTime = Math.min(params.delayTime, SAFE_LIMITS.delayTime);
   }
-  
+
   const effect = availableEffects[type]();
-  
+
   // Apply parameters
   if (effect.set) {
     effect.set(params);
@@ -44,7 +44,7 @@ export function createSafeEffect(type, params = {}) {
       }
     });
   }
-  
+
   return effect;
 }
 
@@ -74,11 +74,11 @@ export const availableEffects = {
 function createHarmonizer() {
   // Create a harmonizer with multiple pitch shifters
   const harmonizer = new Tone.Gain();
-  
+
   // Create multiple pitch shifters for different harmony voices
   const voices = [];
   const maxVoices = HARMONIZER_MAX_VOICES; // Support up to 4 harmony voices
-  
+
   for (let i = 0; i < maxVoices; i++) {
     const voice = {
       pitchShifter: new Tone.PitchShift({
@@ -90,30 +90,30 @@ function createHarmonizer() {
       }),
       gain: new Tone.Gain(HARMONIZER_DEFAULT_VOICE_LEVEL) // Individual voice level control
     };
-    
+
     // Chain: input -> pitch shifter -> gain -> output
     voice.pitchShifter.connect(voice.gain);
     voices.push(voice);
   }
-  
+
   // Dry signal path
   const dryGain = new Tone.Gain(1.0);
-  
+
   // Mix control
   const wetGain = new Tone.Gain(0.5);
   const outputGain = new Tone.Gain(1.0);
-  
+
   // Connect dry path
   harmonizer.connect(dryGain);
   dryGain.connect(outputGain);
-  
+
   // Connect wet path (harmonies)
   voices.forEach(voice => {
     harmonizer.connect(voice.pitchShifter);
     voice.gain.connect(wetGain);
   });
   wetGain.connect(outputGain);
-  
+
   // API for controlling the harmonizer
   harmonizer.setIntervals = function(intervals) {
     // intervals is an array like [3, 5, 12] for 3rd, 5th, octave
@@ -123,44 +123,43 @@ function createHarmonizer() {
         voices[index].gain.gain.value = interval !== 0 ? HARMONIZER_DEFAULT_VOICE_LEVEL : 0;
       }
     });
-    
+
     // Mute unused voices
     for (let i = intervals.length; i < voices.length; i++) {
       voices[i].gain.gain.value = 0;
     }
   };
-  
+
   harmonizer.setVoiceLevel = function(voiceIndex, level) {
     if (voiceIndex >= 0 && voiceIndex < voices.length) {
       voices[voiceIndex].gain.gain.value = level;
     }
   };
-  
+
   harmonizer.setMix = function(mix) {
     // mix: 0 = dry only, 1 = wet only
     dryGain.gain.value = 1 - mix;
     wetGain.gain.value = mix;
   };
-  
+
   // Preset intervals
   harmonizer.presets = HARMONIZER_PRESETS;
-  
+
   harmonizer.applyPreset = function(presetName) {
     const preset = this.presets[presetName];
     if (preset) {
       this.setIntervals(preset);
     }
   };
-  
+
   // Return the output
   harmonizer.output = outputGain;
-  
+
   // Override connect to use output
-  const originalConnect = harmonizer.connect.bind(harmonizer);
   harmonizer.connect = function(destination) {
     return outputGain.connect(destination);
   };
-  
+
   // Add dispose method
   harmonizer.dispose = function() {
     voices.forEach(voice => {
@@ -171,7 +170,7 @@ function createHarmonizer() {
     wetGain.dispose();
     outputGain.dispose();
   };
-  
+
   return harmonizer;
 }
 
@@ -183,18 +182,18 @@ function createFreezeReverb() {
   // Create a freeze reverb with infinite sustain capability
   // Use Freeverb which doesn't require async initialization
   const reverb = new Tone.Freeverb(EFFECT_DEFAULTS.freezeReverb);
-  
+
   // Add feedback delay for infinite sustain
   const feedbackDelay = new Tone.FeedbackDelay(EFFECT_DEFAULTS.freezeReverb.feedbackDelay);
-  
+
   // Add modulation for tail movement
   const modulation = new Tone.Chorus(EFFECT_DEFAULTS.freezeReverb.modulation);
-  
+
   // Create custom freeze control
   const freezeControl = {
     _frozen: false,
     _originalFeedback: 0.95,
-    
+
     freeze: function(enable) {
       this._frozen = enable;
       if (enable) {
@@ -205,27 +204,27 @@ function createFreezeReverb() {
         reverb.roomSize.value = FREEZE_REVERB_CONFIG.unfrozen.roomSize;
       }
     },
-    
+
     get frozen() {
       return this._frozen;
     }
   };
-  
+
   // Chain the effects
   const chain = new Tone.Gain();
   chain.chain(reverb, feedbackDelay, modulation);
-  
+
   // Attach freeze control to the chain
   chain.freezeControl = freezeControl;
   chain.freeze = (enable) => freezeControl.freeze(enable);
-  
+
   // Add dispose method
   chain.dispose = function() {
     reverb.dispose();
     feedbackDelay.dispose();
     modulation.dispose();
   };
-  
+
   return chain;
 }
 

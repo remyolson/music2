@@ -2,7 +2,7 @@
  * Instrument Factory - Creates and manages musical instruments
  */
 import * as Tone from '../../../node_modules/tone/build/esm/index.js';
-import { 
+import {
   INSTRUMENT_DEFAULTS,
   DRUM_PITCHES,
   DRUM_DURATIONS,
@@ -68,7 +68,7 @@ export function createInstrument(type, settings = {}) {
         }
       });
 
-    case 'strings':
+    case 'strings': {
       const stringSynth = new Tone.PolySynth(Tone.FMSynth, {
         harmonicity: 2.8,
         modulationIndex: 5,
@@ -95,6 +95,7 @@ export function createInstrument(type, settings = {}) {
       });
       stringSynth.connect(stringFilter);
       return stringFilter;
+    }
 
     case 'brass':
       return new Tone.MonoSynth({
@@ -116,7 +117,7 @@ export function createInstrument(type, settings = {}) {
         portamento: portamentoTime
       });
 
-    case 'drums_kit':
+    case 'drums_kit': {
       // Create multiple instances for polyphony
       const drumKit = {
         kick: new Tone.PolySynth(Tone.MembraneSynth, {
@@ -146,6 +147,7 @@ export function createInstrument(type, settings = {}) {
         })
       };
       return drumKit;
+    }
 
     case 'electric_guitar':
       return new Tone.MonoSynth({
@@ -358,7 +360,7 @@ export function createInstrument(type, settings = {}) {
         }
       });
 
-    case 'vibraphone':
+    case 'vibraphone': {
       const vibeSynth = new Tone.PolySynth(Tone.FMSynth, {
         harmonicity: 1,
         modulationIndex: 10,
@@ -384,6 +386,7 @@ export function createInstrument(type, settings = {}) {
       });
       vibeSynth.connect(vibrato);
       return vibrato;
+    }
 
     case 'xylophone':
       return new Tone.PolySynth(Tone.Synth, {
@@ -436,7 +439,7 @@ export function createInstrument(type, settings = {}) {
         portamento: portamentoTime
       });
 
-    case 'choir':
+    case 'choir': {
       const choirSynth = new Tone.PolySynth(Tone.Synth, {
         oscillator: { type: 'fatsawtooth', count: 5, spread: 40 },
         envelope: {
@@ -454,6 +457,7 @@ export function createInstrument(type, settings = {}) {
       });
       choirSynth.connect(choirFilter);
       return choirFilter;
+    }
 
     case 'banjo':
       return new Tone.PluckSynth({
@@ -490,12 +494,12 @@ export function createInstrument(type, settings = {}) {
         }
       });
 
-    case 'granular_pad':
+    case 'granular_pad': {
       // Create a custom granular pad synthesizer with evolving textures
       const grainSize = settings?.grainSize || 0.1;
       const grainDensity = settings?.grainDensity || 10;
       const shimmer = settings?.shimmer || 0.3;
-      
+
       // Using multiple detuned voices to create granular-like texture
       const granularPad = new Tone.PolySynth({
         maxPolyphony: 8,
@@ -514,7 +518,7 @@ export function createInstrument(type, settings = {}) {
           }
         }
       });
-      
+
       // Add shimmer effect with chorus and slight pitch modulation
       const shimmerChorus = new Tone.Chorus({
         frequency: 2 * shimmer,
@@ -522,34 +526,35 @@ export function createInstrument(type, settings = {}) {
         depth: 0.5,
         wet: shimmer
       });
-      
+
       // Add subtle tremolo for movement
       const tremolo = new Tone.Tremolo({
         frequency: grainDensity / 4,
         depth: 0.2,
         wet: 0.3
       }).start();
-      
+
       // Add filter for warmth
       const warmthFilter = new Tone.Filter({
         type: 'lowpass',
         frequency: 3000,
         rolloff: -12
       });
-      
+
       // Create feedback delay for spaciousness
       const spatialDelay = new Tone.FeedbackDelay({
         delayTime: grainSize,
         feedback: 0.4,
         wet: 0.3
       });
-      
+
       // Connect the chain
       granularPad.chain(shimmerChorus, tremolo, warmthFilter, spatialDelay);
-      
-      return spatialDelay;
 
-    case 'vocoder_synth':
+      return spatialDelay;
+    }
+
+    case 'vocoder_synth': {
       // Create a vocoder-style synth with formant filtering and pitch correction
       const vocoderCarrier = new Tone.PolySynth(Tone.Synth, {
         oscillator: { type: 'sawtooth' },
@@ -560,12 +565,12 @@ export function createInstrument(type, settings = {}) {
           release: envelope.release ?? 0.5
         }
       });
-      
+
       // Create 5-band formant filter bank
       const formantFrequencies = [700, 1220, 2600, 3200, 4400]; // Formant frequencies
       const formantQ = [12, 10, 8, 8, 6]; // Q values for each formant
       const formantGains = [0, -5, -10, -15, -20]; // Relative gains in dB
-      
+
       const formantFilters = formantFrequencies.map((freq, i) => {
         const filter = new Tone.Filter({
           type: 'bandpass',
@@ -575,17 +580,17 @@ export function createInstrument(type, settings = {}) {
         const gain = new Tone.Gain(Tone.dbToGain(formantGains[i]));
         return { filter, gain };
       });
-      
+
       // Create parallel filter bank
       const filterMixer = new Tone.Gain(0.3); // Reduce overall level to prevent clipping
-      
+
       // Connect carrier to all formant filters in parallel
       formantFilters.forEach(({ filter, gain }) => {
         vocoderCarrier.connect(filter);
         filter.connect(gain);
         gain.connect(filterMixer);
       });
-      
+
       // Add gentle pitch correction using AutoFilter modulation
       const pitchModulation = new Tone.AutoFilter({
         frequency: 4,
@@ -594,13 +599,13 @@ export function createInstrument(type, settings = {}) {
         octaves: 2,
         wet: 0.2
       }).start();
-      
+
       // Add smooth portamento for voice-like glides
       vocoderCarrier.set({ portamento: portamentoTime || 0.05 });
-      
+
       // Connect the chain
       filterMixer.connect(pitchModulation);
-      
+
       // Store formant control for dynamic adjustment
       pitchModulation.formantControl = (formantShift) => {
         // Shift formant frequencies based on formant parameter (-5 to +5)
@@ -609,8 +614,9 @@ export function createInstrument(type, settings = {}) {
           filter.frequency.value = formantFrequencies[i] * shiftFactor;
         });
       };
-      
+
       return pitchModulation;
+    }
 
     default:
       return new Tone.Synth();
@@ -626,7 +632,7 @@ export function createInstrument(type, settings = {}) {
 export async function createInstrumentWithEffects(track, getMasterBus) {
   const instrument = createInstrument(track.instrument, track.settings);
   const effectChain = [];
-  
+
   // Add gain stage to reduce individual instrument volumes
   const instrumentGain = new Tone.Gain(INSTRUMENT_GAIN_FACTOR);
   effectChain.push(instrumentGain);

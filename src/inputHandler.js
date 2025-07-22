@@ -32,20 +32,20 @@ export function initialize() {
   jsonEditor.addEventListener('paste', (e) => {
     e.preventDefault();
     const pastedText = (e.clipboardData || window.clipboardData).getData('text');
-    
+
     try {
       const parsed = JSON.parse(pastedText);
       const formatted = JSON.stringify(parsed, null, 2);
-      
+
       const start = jsonEditor.selectionStart;
       const end = jsonEditor.selectionEnd;
       const value = jsonEditor.value;
-      
+
       jsonEditor.value = value.substring(0, start) + formatted + value.substring(end);
-      
+
       const newCursorPos = start + formatted.length;
       jsonEditor.setSelectionRange(newCursorPos, newCursorPos);
-      
+
       updateLineNumbers();
       handleInput();
     } catch (error) {
@@ -59,19 +59,19 @@ export function initialize() {
 
   // Initialize keyboard shortcuts
   initializeKeyboardShortcuts();
-  
+
   // Initialize live input controls
   initializeLiveInput();
-  
+
   // Initialize live chain builder
   initializeLiveChainBuilder();
-  
+
   // Initialize effect preset UI
   effectPresetUI.initialize('effect-preset-container', (presetData) => {
     // Apply preset to master bus
     applyMasterEffectPreset(presetData);
   });
-  
+
   // Start with "No Effect" preset
   effectPresetUI.selectPreset('no-effect');
 }
@@ -90,17 +90,17 @@ function handleInput() {
     // If tracks are selected, merge the edited filtered data back into fullMusicData
     if (selectedTracks.size > 0 && fullMusicData) {
       const editedData = result.data;
-      
+
       // Create a map of selected track indices to their new data
       const selectedTrackIndices = Array.from(selectedTracks).sort();
       const trackUpdates = new Map();
-      
+
       editedData.tracks.forEach((track, i) => {
         if (i < selectedTrackIndices.length) {
           trackUpdates.set(selectedTrackIndices[i], track);
         }
       });
-      
+
       // Update the full music data with changes
       fullMusicData = {
         ...fullMusicData,
@@ -110,13 +110,13 @@ function handleInput() {
           return trackUpdates.has(index) ? trackUpdates.get(index) : track;
         })
       };
-      
+
       // Update the state with merged data
       update(fullMusicData);
     } else {
       // Store the full music data
       fullMusicData = result.data;
-      
+
       // Update the state with full data (not filtered)
       update(result.data);
     }
@@ -128,7 +128,7 @@ function handleInput() {
 }
 
 function updateLineNumbers() {
-  if (!lineNumbers) return;
+  if (!lineNumbers) {return;}
   const lineCount = jsonEditor.value.split('\n').length;
   let numbers = '';
   for (let i = 1; i <= lineCount; i++) {
@@ -138,10 +138,10 @@ function updateLineNumbers() {
 }
 
 export function updateJSONDisplay() {
-  if (!jsonEditor || !fullMusicData) return;
+  if (!jsonEditor || !fullMusicData) {return;}
 
   let displayData;
-  
+
   if (selectedTracks.size > 0) {
     // Create filtered data with only selected tracks
     displayData = {
@@ -170,47 +170,47 @@ function initializeLiveInput() {
   const errorDiv = document.getElementById('permission-error');
   const latencyInfo = document.getElementById('latency-info');
   const latencyValue = document.getElementById('latency-value');
-  
+
   // Open modal when live input button is clicked
   liveInputButton.addEventListener('click', () => {
     modal.style.display = 'block';
     updateLiveInputUI();
   });
-  
+
   // Close modal
   closeButton.addEventListener('click', () => {
     modal.style.display = 'none';
   });
-  
+
   // Close modal when clicking outside
   window.addEventListener('click', (e) => {
     if (e.target === modal) {
       modal.style.display = 'none';
     }
   });
-  
+
   // Start live input
   startButton.addEventListener('click', async () => {
     try {
       errorDiv.style.display = 'none';
-      
+
       const config = {
         monitor: document.getElementById('live-monitor').checked,
         echoCancellation: document.getElementById('echo-cancel').checked,
         noiseSuppression: document.getElementById('noise-suppress').checked,
         effects: getLiveEffectChain() // Get effects from chain builder
       };
-      
+
       const result = await startLiveInput(config);
-      
+
       if (result && result.success) {
         latencyValue.textContent = result.latency;
         latencyInfo.style.display = 'block';
         updateLiveInputUI();
-        
+
         // Dispatch event for other components
-        window.dispatchEvent(new CustomEvent('liveInputStatusChanged', { 
-          detail: { active: true } 
+        window.dispatchEvent(new CustomEvent('liveInputStatusChanged', {
+          detail: { active: true }
         }));
       }
     } catch (error) {
@@ -218,14 +218,14 @@ function initializeLiveInput() {
       errorDiv.style.display = 'block';
     }
   });
-  
+
   // Stop live input
   stopButton.addEventListener('click', async () => {
     await stopLiveInput();
     latencyInfo.style.display = 'none';
     updateLiveInputUI();
   });
-  
+
   // Start recording
   recordButton.addEventListener('click', async () => {
     const result = await startLiveInputRecording();
@@ -234,7 +234,7 @@ function initializeLiveInput() {
       stopRecordButton.style.display = 'inline-block';
     }
   });
-  
+
   // Stop recording and add to tracks
   stopRecordButton.addEventListener('click', async () => {
     const recording = await stopLiveInputRecording();
@@ -246,7 +246,7 @@ function initializeLiveInput() {
         buffer: recording.buffer,
         notes: [{ time: 0, duration: recording.duration, value: 'C4', volume: 0.7 }]
       };
-      
+
       // Add to current music data
       if (fullMusicData) {
         fullMusicData.tracks.push(newTrack);
@@ -254,15 +254,15 @@ function initializeLiveInput() {
         updateLineNumbers();
         handleInput();
       }
-      
+
       recordButton.style.display = 'inline-block';
       stopRecordButton.style.display = 'none';
     }
   });
-  
+
   function updateLiveInputUI() {
     const status = getLiveInputStatus();
-    
+
     if (status.active) {
       startButton.style.display = 'none';
       stopButton.style.display = 'inline-block';
@@ -294,7 +294,7 @@ function initializeKeyboardShortcuts() {
       e.preventDefault();
       const playButton = document.getElementById('play-button');
       const stopButton = document.getElementById('stop-button');
-      
+
       // Toggle play/stop
       if (playButton && stopButton) {
         if (document.querySelector('.is-playing')) {
@@ -318,7 +318,7 @@ function initializeKeyboardShortcuts() {
           selectedTracks.add(trackIndex);
           applyTrackSelection(selectedTracks);
           updateJSONDisplay();
-          
+
           // Update visual selection
           document.querySelectorAll('.track-selected').forEach(el => {
             el.classList.remove('track-selected');
@@ -345,7 +345,7 @@ function initializeKeyboardShortcuts() {
           }
           applyTrackSelection(selectedTracks);
           updateJSONDisplay();
-          
+
           // Update visual selection
           const trackGroup = document.querySelector(`.track[data-track-index="${trackIndex}"]`);
           if (trackGroup) {
@@ -365,7 +365,7 @@ function initializeKeyboardShortcuts() {
       selectedTracks.clear();
       applyTrackSelection(selectedTracks);
       updateJSONDisplay();
-      
+
       // Clear visual selections
       document.querySelectorAll('.track-selected').forEach(el => {
         el.classList.remove('track-selected');
@@ -401,7 +401,7 @@ E - Effect presets menu
 
 Track numbers correspond to their order in the JSON.
   `.trim();
-  
+
   alert(helpText);
 }
 
