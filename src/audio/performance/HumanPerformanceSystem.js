@@ -1,5 +1,5 @@
 import { DisposalRegistry } from '../../utils/DisposalRegistry.js';
-import { state } from '../../state.js';
+import { update as updateState, subscribe } from '../../state.js';
 import { timingHumanizer } from './TimingHumanizer.js';
 import { velocityPatternGenerator } from './VelocityPatternGenerator.js';
 import { microGroove } from './MicroGroove.js';
@@ -189,12 +189,13 @@ export class HumanPerformanceSystem {
     this.loadProfile('natural');
     
     // Initialize state tracking
-    state.subscribe('tempo', (tempo) => {
-      this.performanceState.tempo = tempo;
-    });
-    
-    state.subscribe('timeSignature', (sig) => {
-      this.performanceState.timeSignature = sig;
+    subscribe((newState) => {
+      if (newState.tempo) {
+        this.performanceState.tempo = newState.tempo;
+      }
+      if (newState.timeSignature) {
+        this.performanceState.timeSignature = newState.timeSignature;
+      }
     });
     
     return true;

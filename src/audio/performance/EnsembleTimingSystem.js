@@ -1,4 +1,4 @@
-import { state } from '../../state.js';
+import { update as updateState } from '../../state.js';
 import { DisposalRegistry } from '../../utils/DisposalRegistry.js';
 
 /**

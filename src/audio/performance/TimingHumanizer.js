@@ -1,6 +1,6 @@
 import * as Tone from 'tone';
 import { DisposalRegistry } from '../../utils/DisposalRegistry.js';
-import { state } from '../../state.js';
+import { update as updateState } from '../../state.js';
 
 /**
  * TimingHumanizer - Adds human-like timing variations to performances

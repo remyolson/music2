@@ -1,5 +1,5 @@
 import * as Tone from 'tone';
-import { state } from '../../state.js';
+import { update as updateState } from '../../state.js';
 import { ARTICULATION_KEYSWITCHES } from '../../midi/MidiMappings.js';
 
 /**
@@ -308,7 +308,7 @@ export class ArticulationEngine {
     const transition = this.transitionRules.get(transitionKey) || { time: 0.1, fade: false };
     
     // Notify state
-    state.setState({
+    updateState({
       [`${this.instrumentType}_articulation`]: articulation,
       [`${this.instrumentType}_articulationTransition`]: transition
     });

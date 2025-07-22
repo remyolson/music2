@@ -1,5 +1,5 @@
 import * as Tone from 'tone';
-import { state } from '../../state.js';
+import { update as updateState } from '../../state.js';
 
 /**
  * ScaleConstraints - Constrains notes to selected scales and modes
@@ -107,7 +107,7 @@ export class ScaleConstraints {
     this.updateScaleDegrees();
     
     // Notify state
-    state.setState({
+    updateState({
       currentKey: key,
       currentScale: scale,
       scaleNotes: this.getScaleNotes()

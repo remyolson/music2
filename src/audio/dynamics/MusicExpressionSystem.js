@@ -1,5 +1,5 @@
 import * as Tone from 'tone';
-import { state } from '../../state.js';
+import { update as updateState, subscribe, getState } from '../../state.js';
 import { midiInputHandler } from '../../midi/MidiInputHandler.js';
 import { VelocityManager, VELOCITY_PRESETS } from './VelocityManager.js';
 import { createArticulationEngine } from '../articulation/ArticulationEngine.js';
@@ -45,8 +45,10 @@ export class MusicExpressionSystem {
     }
     
     // Subscribe to state changes
-    state.subscribe('tracks', (tracks) => {
-      this.updateTracks(tracks);
+    subscribe((newState) => {
+      if (newState.tracks) {
+        this.updateTracks(newState.tracks);
+      }
     });
   }
 
@@ -242,7 +244,7 @@ export class MusicExpressionSystem {
       
       // Store active sources for note off
       const noteKey = `${track.id}-${midiNote}`;
-      state.setState({ [`activeNote_${noteKey}`]: activeSources });
+      updateState({ [`activeNote_${noteKey}`]: activeSources });
     } else {
       // Fallback to direct instrument playback
       const instrument = track.components?.instrument;
@@ -259,7 +261,7 @@ export class MusicExpressionSystem {
    */
   stopNoteWithExpression(track, midiNote) {
     const noteKey = `${track.id}-${midiNote}`;
-    const activeSources = state.getState()[`activeNote_${noteKey}`];
+    const activeSources = getState()[`activeNote_${noteKey}`];
     
     if (activeSources) {
       const velocityManager = this.velocityManagers.get(track.id);
@@ -268,7 +270,7 @@ export class MusicExpressionSystem {
       }
       
       // Clear from state
-      state.setState({ [`activeNote_${noteKey}`]: null });
+      updateState({ [`activeNote_${noteKey}`]: null });
     } else {
       // Fallback to direct instrument release
       const note = Tone.Frequency(midiNote, 'midi').toNote();
@@ -342,7 +344,7 @@ export class MusicExpressionSystem {
     this.midiLearnMode = true;
     this.midiLearnTarget = { trackId, parameter };
     
-    state.setState({
+    updateState({
       midiLearnMode: true,
       midiLearnTarget: `${trackId}:${parameter}`
     });
@@ -366,7 +368,7 @@ export class MusicExpressionSystem {
     this.midiLearnMode = false;
     this.midiLearnTarget = null;
     
-    state.setState({
+    updateState({
       midiLearnMode: false,
       midiLearnTarget: null,
       midiLearnComplete: `CC${controller} → ${parameter}`

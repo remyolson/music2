@@ -1,5 +1,5 @@
 import * as Tone from 'tone';
-import { state } from '../state.js';
+import { update as updateState } from '../state.js';
 import { DisposalRegistry } from '../utils/DisposalRegistry.js';
 
 /**
@@ -41,7 +41,7 @@ export class MidiInputHandler {
       // Check for WebMIDI support
       if (!navigator.requestMIDIAccess) {
         console.warn('WebMIDI not supported in this browser');
-        state.setState({ midiAvailable: false });
+        updateState({ midiAvailable: false });
         return false;
       }
       
@@ -55,7 +55,7 @@ export class MidiInputHandler {
       this.refreshDevices();
       
       this.isInitialized = true;
-      state.setState({ 
+      updateState({ 
         midiAvailable: true,
         midiDevices: Array.from(this.activeDevices.keys())
       });
@@ -63,7 +63,7 @@ export class MidiInputHandler {
       return true;
     } catch (error) {
       console.error('Failed to initialize MIDI:', error);
-      state.setState({ midiAvailable: false });
+      updateState({ midiAvailable: false });
       return false;
     }
   }
@@ -86,7 +86,7 @@ export class MidiInputHandler {
     }
     
     // Update state
-    state.setState({ 
+    updateState({ 
       midiDevices: Array.from(this.activeDevices.keys())
     });
   }
@@ -133,7 +133,7 @@ export class MidiInputHandler {
     }
     
     // Update state
-    state.setState({ 
+    updateState({ 
       midiDevices: Array.from(this.activeDevices.keys())
     });
   }
@@ -312,7 +312,7 @@ export class MidiInputHandler {
     }
     
     // Update state
-    state.setState({ sustainPedal: pressed });
+    updateState({ sustainPedal: pressed });
   }
 
   /**
@@ -321,7 +321,7 @@ export class MidiInputHandler {
    * @param {number} channel 
    */
   handleModulation(value, channel) {
-    state.setState({ modulation: value });
+    updateState({ modulation: value });
   }
 
   /**
@@ -330,7 +330,7 @@ export class MidiInputHandler {
    * @param {number} channel 
    */
   handleVolume(value, channel) {
-    state.setState({ midiVolume: value });
+    updateState({ midiVolume: value });
   }
 
   /**
@@ -339,7 +339,7 @@ export class MidiInputHandler {
    * @param {number} channel 
    */
   handlePan(value, channel) {
-    state.setState({ midiPan: value });
+    updateState({ midiPan: value });
   }
 
   /**
@@ -348,7 +348,7 @@ export class MidiInputHandler {
    * @param {number} channel 
    */
   handleExpression(value, channel) {
-    state.setState({ expression: value });
+    updateState({ expression: value });
   }
 
   /**
@@ -370,7 +370,7 @@ export class MidiInputHandler {
       });
     });
     
-    state.setState({ pitchBend: normalized });
+    updateState({ pitchBend: normalized });
   }
 
   /**
@@ -389,7 +389,7 @@ export class MidiInputHandler {
       });
     });
     
-    state.setState({ aftertouch: normalized });
+    updateState({ aftertouch: normalized });
   }
 
   /**

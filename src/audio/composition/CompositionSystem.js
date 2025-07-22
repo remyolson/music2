@@ -1,4 +1,4 @@
-import { state } from '../../state.js';
+import { update as updateState } from '../../state.js';
 import { voiceLeadingEngine } from './VoiceLeadingEngine.js';
 import { harmonyEngine } from './HarmonyEngine.js';
 import { phraseManager } from './PhraseManager.js';
@@ -77,7 +77,7 @@ export class CompositionSystem {
     this.scales.setScale(key, scale);
     
     // Update state
-    state.setState({
+    updateState({
       compositionKey: key,
       compositionScale: scale
     });
@@ -400,7 +400,7 @@ export class CompositionSystem {
     }
     
     // Notify
-    state.setState({
+    updateState({
       detectedProgression: progression,
       progressionAnalysis: analysis
     });

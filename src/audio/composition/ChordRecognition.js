@@ -1,5 +1,5 @@
 import * as Tone from 'tone';
-import { state } from '../../state.js';
+import { update as updateState } from '../../state.js';
 import { harmonyEngine } from './HarmonyEngine.js';
 
 /**
@@ -532,7 +532,7 @@ export class ChordRecognition {
     this.notifyChordChange(analysis);
     
     // Update state
-    state.setState({
+    updateState({
       currentChord: analysis.symbol,
       chordRoot: analysis.root,
       chordType: analysis.chordType,
@@ -676,7 +676,7 @@ export class ChordRecognition {
     this.notifyProgressionDetected(progression);
     
     // Update state
-    state.setState({
+    updateState({
       currentProgression: progression.chords.map(c => c.symbol).join(' - '),
       detectedKey: progression.key,
       progressionType: progression.type

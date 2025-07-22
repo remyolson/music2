@@ -1,5 +1,5 @@
 import * as Tone from 'tone';
-import { state } from '../../state.js';
+import { update as updateState } from '../../state.js';
 
 /**
  * PhraseManager - Manages musical phrases, breathing, and natural phrasing

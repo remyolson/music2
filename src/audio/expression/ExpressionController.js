@@ -1,5 +1,5 @@
 import * as Tone from 'tone';
-import { state } from '../../state.js';
+import { update as updateState } from '../../state.js';
 import { DisposalRegistry } from '../../utils/DisposalRegistry.js';
 import { getMappingForInstrument, scaleControllerValue, MIDI_CC } from '../../midi/MidiMappings.js';
 

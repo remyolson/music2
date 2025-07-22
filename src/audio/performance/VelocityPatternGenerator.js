@@ -1,4 +1,4 @@
-import { state } from '../../state.js';
+import { update as updateState } from '../../state.js';
 
 /**
  * VelocityPatternGenerator - Creates human-like velocity patterns
