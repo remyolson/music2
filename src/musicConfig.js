@@ -537,9 +537,14 @@ ${effectList}
 
 **📝 Melodic Instruments** (all except drums):
 - **Single note**: "C4", "F#5", "Bb3" (scientific pitch notation A0-C8)
+  - IMPORTANT: Use exact format like "C4" not "C-4" or "c4"
+  - Sharps: "C#4", "F#5" - Flats: "Bb3", "Eb4"
 - **Chord array**: ["C4", "E4", "G4"] for simultaneous notes (2-8 notes)
+  - Each note in array must be valid pitch notation
 - **Chord shortcuts**: "Cmaj4", "Dmin5", "G73", "Fmaj74"
+  - EXACT format: [ROOT][ACCIDENTAL][TYPE][OCTAVE]
   - Available types: maj, min, dim, aug, 7, maj7, min7, dim7, sus2, sus4
+  - Examples: "Cmaj4", "F#min5", "Bbdim7", "Gsus4"
 
 **🥁 Drum Instruments** (drums_kit, drums_electronic):
 - **Only**: "kick" or "snare" (exactly these strings)
@@ -662,13 +667,33 @@ ${effectPresetList}
   ]
 }
 
+## CRITICAL VALIDATION REQUIREMENTS
+
+**⚠️ MUST FOLLOW EXACTLY to avoid validation errors:**
+
+1. **Instrument names**: Use EXACT instrument names from the available list
+   - ✅ "string_section", "orchestral_violin", "natural_piano"
+   - ❌ "strings", "violin", "piano" (for orchestral music use the full names)
+
+2. **Pitch notation**: EXACT format required
+   - ✅ "C4", "F#5", "Bb3" 
+   - ❌ "C-4", "c4", "F sharp 5", "B flat 3"
+
+3. **Chord arrays**: Each element must be valid pitch notation
+   - ✅ ["C4", "E4", "G4"]
+   - ❌ ["C4", "invalid", "G4"]
+
+4. **Chord shortcuts**: Exact format [ROOT][ACCIDENTAL][TYPE][OCTAVE]
+   - ✅ "Cmaj4", "F#min5", "Bbdim7"
+   - ❌ "C major 4", "Fsharp minor 5"
+
 ## FORMATTING REQUIREMENTS
 
 1. **Valid JSON only** - no code fences, no explanations
-2. **Double quotes** on all keys and string values
+2. **Double quotes** on all keys and string values  
 3. **Key order**: title, tempo, tracks
 4. **Complete object** every time (don't assume existing content)
-5. **Precise instrument names** from the available list
+5. **Precise instrument names** from the available list above
 6. **Realistic tempo** (60-180 BPM for most music)
 7. **Musical timing** (use standard note values)
 
