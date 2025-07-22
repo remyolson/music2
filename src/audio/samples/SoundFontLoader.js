@@ -82,6 +82,25 @@ export class SoundFontLoader {
    * @returns {Tone.Sampler} Configured Sampler instance
    */
   createSampler(samples, options = {}) {
+    // Validate samples parameter
+    if (!samples || typeof samples !== 'object' || Object.keys(samples).length === 0) {
+      console.warn('Invalid or empty samples object, creating fallback synthesizer');
+      return this.registry.register(new Tone.PolySynth(Tone.Synth));
+    }
+
+    // Clean samples object - remove any null/undefined values
+    const cleanSamples = {};
+    Object.entries(samples).forEach(([key, value]) => {
+      if (value !== null && value !== undefined && value !== '') {
+        cleanSamples[key] = value;
+      }
+    });
+
+    if (Object.keys(cleanSamples).length === 0) {
+      console.warn('No valid samples after cleaning, creating fallback synthesizer');
+      return this.registry.register(new Tone.PolySynth(Tone.Synth));
+    }
+
     const defaultOptions = {
       release: 0.1,
       baseUrl: '',
@@ -97,7 +116,8 @@ export class SoundFontLoader {
       }
     });
 
-    const samplerOptions = { ...cleanOptions, urls: samples };
+    // Ensure no null/undefined values in the final options
+    const samplerOptions = { ...cleanOptions, urls: cleanSamples };
     
     try {
       const sampler = this.registry.register(new Tone.Sampler(samplerOptions));

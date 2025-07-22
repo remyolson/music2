@@ -569,11 +569,11 @@ export const woodwindSection = {
     const clarinetSection = await clarinet.create(settings);
     const bassoonSection = await bassoon.create(settings);
     
-    return {
+    const woodwindSection = {
       type: 'woodwind_section',
       sections: { fluteSection, oboeSection, clarinetSection, bassoonSection },
       
-      playChord: (chord, velocity = 100, time = '+0', duration = '1n') => {
+      playChord: function(chord, velocity = 100, time = '+0', duration = '1n') {
         const notes = Array.isArray(chord) ? chord : [chord];
         
         // Distribute notes across woodwind sections
@@ -585,7 +585,11 @@ export const woodwindSection = {
         }
       },
       
-      playMelody: (melody, instrument = 'flute', velocity = 100, time = '+0') => {
+      triggerAttackRelease: function(notes, duration, time = '+0', velocity = 100) {
+        this.playChord(notes, velocity, time, duration);
+      },
+      
+      playMelody: function(melody, instrument = 'flute', velocity = 100, time = '+0') {
         const section = this.sections[`${instrument}Section`];
         if (section && Array.isArray(melody)) {
           melody.forEach((note, index) => {
@@ -595,10 +599,44 @@ export const woodwindSection = {
         }
       },
       
-      dispose: () => {
+      chain: function(...effects) {
+        // Chain effects to all sections
+        Object.values(this.sections).forEach(section => {
+          if (section.chain) section.chain(...effects);
+        });
+        return this;
+      },
+      
+      connect: function(destination) {
+        // Connect all sections to destination
+        Object.values(this.sections).forEach(section => {
+          if (section.connect) section.connect(destination);
+        });
+        return this;
+      },
+      
+      disconnect: function() {
+        // Disconnect all sections
+        Object.values(this.sections).forEach(section => {
+          if (section.disconnect) section.disconnect();
+        });
+        return this;
+      },
+      
+      toDestination: function() {
+        // Connect all sections to destination
+        Object.values(this.sections).forEach(section => {
+          if (section.toDestination) section.toDestination();
+        });
+        return this;
+      },
+      
+      dispose: function() {
         Object.values(this.sections).forEach(section => section.dispose());
         registry.dispose();
       }
     };
+    
+    return woodwindSection;
   }
 };

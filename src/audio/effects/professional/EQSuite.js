@@ -516,7 +516,7 @@ class PultecEQ {
     this.transformer = this.registry.register(new Tone.Filter({
       type: 'lowpass',
       frequency: 18000,
-      rolloff: -6
+      rolloff: -12
     }));
     
     // Output gain
@@ -718,7 +718,7 @@ class NeveStyleEQ {
     this.highpass = this.registry.register(new Tone.Filter({
       type: 'highpass',
       frequency: 50,
-      rolloff: -18
+      rolloff: -24
     }));
     
     // Low shelf with special curve

@@ -611,11 +611,11 @@ export const brassSection = {
     const tromboneSection = await trombone.create(settings);
     const tubaSection = await tuba.create(settings);
     
-    return {
+    const brassSection = {
       type: 'brass_section',
       sections: { trumpetSection, hornSection, tromboneSection, tubaSection },
       
-      playChord: (chord, velocity = 100, time = '+0', duration = '1n') => {
+      playChord: function(chord, velocity = 100, time = '+0', duration = '1n') {
         const notes = Array.isArray(chord) ? chord : [chord];
         
         // Distribute notes across brass sections
@@ -627,7 +627,11 @@ export const brassSection = {
         }
       },
       
-      playFanfare: (pattern, velocity = 100, time = '+0') => {
+      triggerAttackRelease: function(notes, duration, time = '+0', velocity = 100) {
+        this.playChord(notes, velocity, time, duration);
+      },
+      
+      playFanfare: function(pattern, velocity = 100, time = '+0') {
         // Play a typical brass fanfare pattern
         if (Array.isArray(pattern)) {
           pattern.forEach((chord, index) => {
@@ -637,7 +641,7 @@ export const brassSection = {
         }
       },
       
-      setSectionMutes: (muteConfig) => {
+      setSectionMutes: function(muteConfig) {
         // Set different mutes for each section
         if (muteConfig.trumpet) trumpetSection.setMute(muteConfig.trumpet);
         if (muteConfig.horn) hornSection.setMute(muteConfig.horn);
@@ -645,10 +649,44 @@ export const brassSection = {
         if (muteConfig.tuba) tubaSection.setMute(muteConfig.tuba);
       },
       
-      dispose: () => {
+      chain: function(...effects) {
+        // Chain effects to all sections
+        Object.values(this.sections).forEach(section => {
+          if (section.chain) section.chain(...effects);
+        });
+        return this;
+      },
+      
+      connect: function(destination) {
+        // Connect all sections to destination
+        Object.values(this.sections).forEach(section => {
+          if (section.connect) section.connect(destination);
+        });
+        return this;
+      },
+      
+      disconnect: function() {
+        // Disconnect all sections
+        Object.values(this.sections).forEach(section => {
+          if (section.disconnect) section.disconnect();
+        });
+        return this;
+      },
+      
+      toDestination: function() {
+        // Connect all sections to destination
+        Object.values(this.sections).forEach(section => {
+          if (section.toDestination) section.toDestination();
+        });
+        return this;
+      },
+      
+      dispose: function() {
         Object.values(this.sections).forEach(section => section.dispose());
         registry.dispose();
       }
     };
+    
+    return brassSection;
   }
 };
