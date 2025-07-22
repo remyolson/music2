@@ -1,4 +1,4 @@
-import { getTransport } from './audioEngine.js';
+import { getTransport, applyTrackSelection } from './audioEngine.js';
 import * as Tone from 'tone';
 
 let svg = null;
@@ -10,6 +10,7 @@ let zoomSlider = null;
 let trackCountElement = null;
 let jsonEditor = null;
 let lineNumbers = null;
+const selectedTracks = new Set();
 
 function expandNotesWithRepeat(notes) {
   const expanded = [];
@@ -298,104 +299,81 @@ function handleTrackHover(trackIndex, isHovering) {
 function handleTrackClick(trackIndex) {
   if (!jsonEditor || !currentData) return;
 
-  // Find the line number where this track starts in the JSON
-  const lineNumber = findTrackLineNumber(trackIndex);
-  if (lineNumber === -1) return;
+  // Toggle selection set
+  if (selectedTracks.has(trackIndex)) {
+    selectedTracks.delete(trackIndex);
+  } else {
+    selectedTracks.add(trackIndex);
+  }
 
-  // Calculate the position to scroll to
-  const lineHeight = parseFloat(getComputedStyle(jsonEditor).lineHeight);
-  const scrollPosition = (lineNumber - 1) * lineHeight;
+  // Update SVG track-selected class
+  const trackGroup = svg.querySelector(`.track[data-track-index="${trackIndex}"]`);
+  if (trackGroup) {
+    if (selectedTracks.has(trackIndex)) {
+      trackGroup.classList.add('track-selected');
+    } else {
+      trackGroup.classList.remove('track-selected');
+    }
+  }
 
-  // Scroll the editor
-  jsonEditor.scrollTop = scrollPosition;
+  // Apply muting based on selection
+  applyTrackSelection(selectedTracks);
 
-  // Highlight the track in the JSON editor
-  highlightTrackInEditor(trackIndex);
+  // Navigate JSON to track name line
+  const lineNumber = findTrackNameLine(trackIndex);
+  if (lineNumber !== -1) {
+    const lineHeight = parseFloat(getComputedStyle(jsonEditor).lineHeight);
+    jsonEditor.scrollTop = (lineNumber - 1) * lineHeight;
+    highlightTrackNameInEditor(trackIndex);
+  }
 }
 
-function findTrackLineNumber(trackIndex) {
+function findTrackNameLine(trackIndex) {
   if (!jsonEditor) return -1;
-
-  const jsonText = jsonEditor.value;
-  const lines = jsonText.split('\n');
-
+  const lines = jsonEditor.value.split('\n');
   let currentTrackIndex = -1;
   let insideTracks = false;
-
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-
-    // Check if we're entering the tracks array
+    const line = lines[i];
     if (line.includes('"tracks"') && line.includes('[')) {
       insideTracks = true;
       continue;
     }
-
     if (insideTracks) {
-      // Check for start of a new track object
-      if (line === '{') {
+      if (line.trim().startsWith('{')) {
         currentTrackIndex++;
-        if (currentTrackIndex === trackIndex) {
-          return i + 1; // Return 1-based line number
-        }
+      }
+      if (currentTrackIndex === trackIndex && line.includes('"name"')) {
+        return i + 1; // 1-based
       }
     }
   }
-
   return -1;
 }
 
-function highlightTrackInEditor(trackIndex) {
+function highlightTrackNameInEditor(trackIndex) {
   if (!jsonEditor) return;
-
-  const jsonText = jsonEditor.value;
-  const lines = jsonText.split('\n');
-
+  const lines = jsonEditor.value.split('\n');
+  let pos = 0;
   let currentTrackIndex = -1;
   let insideTracks = false;
-  let nameLineNumber = -1;
-
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const trimmedLine = line.trim();
-
-    if (trimmedLine.includes('"tracks"') && trimmedLine.includes('[')) {
+    if (line.includes('"tracks"') && line.includes('[')) {
       insideTracks = true;
+      pos += line.length + 1;
       continue;
     }
-
     if (insideTracks) {
-      if (trimmedLine === '{') {
-        currentTrackIndex++;
-      }
-
-      // Look for the "name" field of the current track
+      if (line.trim().startsWith('{')) currentTrackIndex++;
       if (currentTrackIndex === trackIndex && line.includes('"name"')) {
-        nameLineNumber = i;
-        break;
+        const start = pos + line.indexOf(':') + 2; // start of value
+        const end = line.endsWith(',') ? pos + line.length - 1 : pos + line.length;
+        jsonEditor.focus();
+        jsonEditor.setSelectionRange(start, end);
+        return;
       }
     }
-  }
-
-  if (nameLineNumber !== -1) {
-    // Calculate the exact position of the name field value
-    const line = lines[nameLineNumber];
-    const nameMatch = line.match(/"name"\s*:\s*"([^"]*)"/); 
-    
-    if (nameMatch) {
-      // Calculate position to the start of the line
-      let startPos = 0;
-      for (let i = 0; i < nameLineNumber; i++) {
-        startPos += lines[i].length + 1; // +1 for newline
-      }
-      
-      // Find the position of the name value within the line
-      const valueStartIndex = line.indexOf(nameMatch[1]);
-      const valueEndIndex = valueStartIndex + nameMatch[1].length;
-      
-      // Set selection to just the name value
-      jsonEditor.focus();
-      jsonEditor.setSelectionRange(startPos + valueStartIndex, startPos + valueEndIndex);
-    }
+    pos += line.length + 1;
   }
 }

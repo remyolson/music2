@@ -23,10 +23,10 @@ function expandNotesWithRepeat(notes) {
 }
 
 const availableEffects = {
-  reverb: () => new Tone.Reverb({ 
+  reverb: () => new Tone.Reverb({
     decay: 4.0,  // Increased for more natural room sound
     preDelay: 0.03,
-    wet: 0.5 
+    wet: 0.5
   }),
   delay: () => new Tone.Delay({ delayTime: 0.25, feedback: 0.3, wet: 0.3 }),
   distortion: () => new Tone.Distortion({ distortion: 0.4, wet: 0.5 }),
@@ -48,7 +48,7 @@ export function update(musicData) {
 
   const secondsPerBeat = 60 / musicData.tempo;
 
-  musicData.tracks.forEach(track => {
+  musicData.tracks.forEach((track, trackIndex) => {
     const { instrument, effectChain } = createInstrumentWithEffects(track);
     instruments.set(track.name, { instrument, effectChain });
 
@@ -77,7 +77,7 @@ export function update(musicData) {
       } else {
         // Handle chords (arrays of notes)
         if (Array.isArray(note.value)) {
-          const frequencies = note.value.map(midi => 
+          const frequencies = note.value.map(midi =>
             Tone.Frequency(midi, 'midi').toFrequency()
           );
           playInstrument.triggerAttackRelease(frequencies, note.duration, time, velocity);
@@ -95,8 +95,7 @@ export function update(musicData) {
       effectLevel: note.effectLevel
     })));
 
-    part.loop = true;
-    part.loopEnd = getLoopEnd(musicData) * secondsPerBeat;
+    part.trackIndex = trackIndex;
     parts.push(part);
   });
 }
@@ -507,10 +506,34 @@ export async function play() {
 
 export function stop() {
   Tone.Transport.stop();
+  // Cancel any scheduled events to prevent dangling callbacks
+  Tone.Transport.cancel(0);
+
+  // Immediately release all active notes to stop sound instantly
+  instruments.forEach(({ instrument }) => {
+    if (instrument.releaseAll) {
+      instrument.releaseAll(true);
+    } else if (typeof instrument === 'object') {
+      Object.values(instrument).forEach(subInst => {
+        if (subInst.releaseAll) {
+          subInst.releaseAll(true);
+        }
+      });
+    }
+  });
   Tone.Transport.position = 0;
   isPlaying = false;
 }
 
 export function getTransport() {
   return Tone.Transport;
+}
+
+export function applyTrackSelection(selectedIndices) {
+  const hasSelection = selectedIndices.size > 0;
+  parts.forEach(part => {
+    if (part.trackIndex !== undefined) {
+      part.mute = hasSelection && !selectedIndices.has(part.trackIndex);
+    }
+  });
 }
