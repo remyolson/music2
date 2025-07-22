@@ -1,0 +1,71 @@
+{
+  "title": "Bon Iver Live Vocal Pad",
+  "tempo": 80,
+  "tracks": [
+    {
+      "name": "Ambient Pad",
+      "instrument": "pad_synth",
+      "notes": [
+        { "time": 0, "duration": 16, "value": ["C3", "G3"], "volume": 0.2 },
+        { "time": 16, "duration": 16, "value": ["A2", "E3"], "volume": 0.2 }
+      ],
+      "settings": {
+        "globalEffects": [
+          { "type": "reverb", "level": 0.8 },
+          { "type": "delay", "level": 0.4 }
+        ],
+        "noteTransition": "smooth",
+        "envelope": {
+          "attack": 2.0,
+          "release": 3.0
+        }
+      }
+    },
+    {
+      "name": "Bass Drone",
+      "instrument": "synth_bass",
+      "notes": [
+        { "time": 0, "duration": 32, "value": "C2", "volume": 0.3, "effect": "filter", "effectLevel": 0.6 }
+      ],
+      "settings": {
+        "noteTransition": "smooth"
+      }
+    }
+  ],
+  "live_input": {
+    "monitor": true,
+    "effects": [
+      {
+        "type": "harmonizer",
+        "mix": 0.7,
+        "intervals": [3, 7, 10, 15]
+      },
+      {
+        "type": "freezeReverb",
+        "mix": 0.6,
+        "params": {
+          "decay": 80,
+          "preDelay": 0.1
+        }
+      },
+      {
+        "type": "delay",
+        "mix": 0.4,
+        "params": {
+          "delayTime": 0.375,
+          "feedback": 0.6
+        }
+      },
+      {
+        "type": "chorus",
+        "mix": 0.3,
+        "params": {
+          "frequency": 0.5,
+          "delayTime": 4,
+          "depth": 0.4
+        }
+      }
+    ],
+    "recordArmed": false
+  }
+}

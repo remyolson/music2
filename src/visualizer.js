@@ -1,6 +1,6 @@
-import { getTransport, applyTrackSelection } from './audioEngine.js';
+import { getTransport, applyTrackSelection, freezeTrack, unfreezeTrack, isTrackFrozen } from './audioEngine.js';
 import { updateJSONDisplay } from './inputHandler.js';
-import * as Tone from 'tone';
+import * as Tone from '../node_modules/tone/build/esm/index.js';
 
 let svg = null;
 let playhead = null;
@@ -175,7 +175,9 @@ function drawTracks(musicData, pixelsPerBeat) {
         tuba: '#cc8800',
         choir: '#ff88cc',
         banjo: '#88cc00',
-        electric_piano: '#88ffcc'
+        electric_piano: '#88ffcc',
+        granular_pad: '#9988ff',
+        vocoder_synth: '#ff9988'
       };
       rect.setAttribute('fill', instrumentColors[track.instrument] || '#888888');
       rect.setAttribute('rx', 2);
@@ -220,6 +222,48 @@ function drawTracks(musicData, pixelsPerBeat) {
     trackLabel.textContent = track.name;
     trackLabel.style.pointerEvents = 'none';
     trackGroup.appendChild(trackLabel);
+    
+    // Add freeze button for the track
+    const freezeButton = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    freezeButton.setAttribute('class', 'freeze-button');
+    freezeButton.style.cursor = 'pointer';
+    
+    const freezeBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    freezeBg.setAttribute('x', trackWidth - 40);
+    freezeBg.setAttribute('y', yOffset - 2);
+    freezeBg.setAttribute('width', 35);
+    freezeBg.setAttribute('height', 20);
+    freezeBg.setAttribute('rx', 3);
+    freezeBg.setAttribute('fill', isTrackFrozen(trackIndex) ? '#00ff88' : '#404040');
+    freezeBg.setAttribute('stroke', '#606060');
+    freezeBg.setAttribute('stroke-width', '1');
+    
+    const freezeText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    freezeText.setAttribute('x', trackWidth - 22);
+    freezeText.setAttribute('y', yOffset + 12);
+    freezeText.setAttribute('fill', isTrackFrozen(trackIndex) ? '#000' : '#a0a0a0');
+    freezeText.setAttribute('font-size', '10');
+    freezeText.setAttribute('text-anchor', 'middle');
+    freezeText.textContent = isTrackFrozen(trackIndex) ? 'UNFR' : 'FRZ';
+    freezeText.style.pointerEvents = 'none';
+    
+    freezeButton.appendChild(freezeBg);
+    freezeButton.appendChild(freezeText);
+    
+    // Add click handler for freeze button
+    freezeButton.addEventListener('click', async (e) => {
+      e.stopPropagation(); // Prevent track selection
+      if (isTrackFrozen(trackIndex)) {
+        unfreezeTrack(trackIndex);
+      } else {
+        const loopDuration = getLoopEnd(musicData);
+        await freezeTrack(trackIndex, loopDuration);
+      }
+      // Refresh the visualizer to update button state
+      update(musicData);
+    });
+    
+    trackGroup.appendChild(freezeButton);
 
     tracksGroup.appendChild(trackGroup);
     yOffset += NOTE_HEIGHT + 30;

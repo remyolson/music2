@@ -1,0 +1,97 @@
+{
+  "title": "Woods (Bon Iver Style)",
+  "tempo": 70,
+  "tracks": [
+    {
+      "name": "Vocal Pad",
+      "instrument": "granular_pad",
+      "notes": [
+        { "time": 0, "duration": 8, "value": ["E3", "G3", "B3"], "volume": 0.4 },
+        { "time": 8, "duration": 8, "value": ["D3", "F#3", "A3"], "volume": 0.4 },
+        { "time": 16, "duration": 8, "value": ["C3", "E3", "G3"], "volume": 0.5 },
+        { "time": 24, "duration": 8, "value": ["D3", "F#3", "A3", "D4"], "volume": 0.6 }
+      ],
+      "settings": {
+        "globalEffects": [
+          { "type": "freezeReverb", "level": 0.7 },
+          { "type": "chorus", "level": 0.4 },
+          { "type": "delay", "level": 0.3 }
+        ],
+        "noteTransition": "smooth",
+        "envelope": {
+          "attack": 2.0,
+          "decay": 1.0,
+          "sustain": 0.8,
+          "release": 4.0
+        },
+        "grainSize": 0.08,
+        "grainDensity": 15,
+        "shimmer": 0.6
+      }
+    },
+    {
+      "name": "Vocoder Lead",
+      "instrument": "vocoder_synth",
+      "notes": [
+        { "time": 4, "duration": 2, "value": "E4", "volume": 0.5, "formant": 0 },
+        { "time": 6, "duration": 1, "value": "G4", "volume": 0.5, "formant": 1 },
+        { "time": 7, "duration": 1, "value": "B4", "volume": 0.5, "formant": 2 },
+        { "time": 12, "duration": 2, "value": "D4", "volume": 0.5, "formant": -1 },
+        { "time": 14, "duration": 2, "value": "F#4", "volume": 0.6, "formant": 0 },
+        { "time": 20, "duration": 3, "value": "C4", "volume": 0.6, "formant": -2 },
+        { "time": 23, "duration": 1, "value": "E4", "volume": 0.5, "formant": 0 },
+        { "time": 28, "duration": 4, "value": "D4", "volume": 0.7, "formant": 1, "pitch": 12 }
+      ],
+      "settings": {
+        "globalEffects": [
+          { "type": "reverb", "level": 0.8 },
+          { "type": "delay", "level": 0.4 },
+          { "type": "harmonizer", "level": 0.5 }
+        ],
+        "noteTransition": "legato",
+        "portamento": 0.1
+      }
+    },
+    {
+      "name": "Harmony Layer",
+      "instrument": "vocoder_synth",
+      "notes": [
+        { "time": 8, "duration": 4, "value": ["G3", "B3"], "volume": 0.3, "pitch": 7 },
+        { "time": 12, "duration": 4, "value": ["F#3", "A3"], "volume": 0.3, "pitch": 7 },
+        { "time": 24, "duration": 4, "value": ["E3", "G3"], "volume": 0.4, "pitch": 5 },
+        { "time": 28, "duration": 4, "value": ["F#3", "A3", "D4"], "volume": 0.5, "pitch": 3 }
+      ],
+      "settings": {
+        "globalEffects": [
+          { "type": "freezeReverb", "level": 0.9 },
+          { "type": "filter", "level": 0.3 }
+        ],
+        "noteTransition": "smooth",
+        "envelope": {
+          "attack": 1.5,
+          "release": 3.0
+        }
+      }
+    },
+    {
+      "name": "Sub Bass",
+      "instrument": "synth_bass",
+      "notes": [
+        { "time": 0, "duration": 8, "value": "E1", "volume": 0.6 },
+        { "time": 8, "duration": 8, "value": "D1", "volume": 0.6 },
+        { "time": 16, "duration": 8, "value": "C1", "volume": 0.7 },
+        { "time": 24, "duration": 8, "value": "D1", "volume": 0.8 }
+      ],
+      "settings": {
+        "globalEffects": [
+          { "type": "filter", "level": 0.4 }
+        ],
+        "noteTransition": "smooth",
+        "envelope": {
+          "attack": 0.1,
+          "release": 2.0
+        }
+      }
+    }
+  ]
+}

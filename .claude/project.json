@@ -1,0 +1,89 @@
+{
+  "project": "Music2",
+  "description": "Browser-based audio processing library with real-time effects and live input",
+  "version": "1.0.0",
+  "aiAssistantVersion": "1.0",
+  "primaryTechnology": "JavaScript/Tone.js",
+  "focusAreas": [
+    "memory-safety",
+    "code-modularization",
+    "test-coverage",
+    "performance"
+  ],
+  "criticalFiles": [
+    "src/audioEngine.js",
+    "src/utils/DisposalRegistry.js",
+    "REFACTORING_PLAN.md",
+    "CLAUDE.md"
+  ],
+  "antiPatterns": [
+    "creating Tone.js objects without DisposalRegistry",
+    "addEventListener without removal",
+    "setInterval/setTimeout without cleanup",
+    "circular dependencies between modules",
+    "magic numbers without constants"
+  ],
+  "preferredPatterns": [
+    "DisposalRegistry for all Tone.js objects",
+    "Factory pattern for object creation",
+    "Composition over inheritance",
+    "Early returns for validation",
+    "Descriptive error messages"
+  ],
+  "testingApproach": {
+    "framework": "vitest",
+    "mockStrategy": "Tone.js is pre-mocked in test/setup.js",
+    "coverageTarget": 90,
+    "priorityModules": [
+      "validationService",
+      "state",
+      "DisposalRegistry"
+    ]
+  },
+  "codeStyle": {
+    "indent": 2,
+    "quotes": "single",
+    "semicolons": true,
+    "lineLength": 100,
+    "importOrder": [
+      "external",
+      "internal",
+      "types"
+    ]
+  },
+  "safetyLimits": {
+    "feedback": 0.7,
+    "wet": 0.6,
+    "reverbDecay": 10,
+    "delayTime": 2,
+    "masterGain": 0.2
+  },
+  "refactoringPriorities": [
+    {
+      "task": "Split audioEngine.js",
+      "urgency": "critical",
+      "targetModules": [
+        "audio/core/Transport.js",
+        "audio/instruments/Factory.js",
+        "audio/effects/Factory.js",
+        "audio/live/LiveInput.js"
+      ]
+    },
+    {
+      "task": "Add comprehensive tests",
+      "urgency": "high",
+      "targetCoverage": 90
+    },
+    {
+      "task": "Implement lazy loading",
+      "urgency": "medium",
+      "reason": "performance optimization"
+    }
+  ],
+  "communicationPreferences": {
+    "explanationLevel": "concise",
+    "codeComments": "minimal unless complex",
+    "progressUpdates": "after each major change",
+    "errorHandling": "always provide context and suggestions"
+  }
+}

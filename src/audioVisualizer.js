@@ -1,4 +1,4 @@
-import * as Tone from 'tone';
+import * as Tone from '../node_modules/tone/build/esm/index.js';
 
 let analyser = null;
 let canvas = null;

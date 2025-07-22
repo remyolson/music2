@@ -1,0 +1,154 @@
+{
+  "title": "Harmony Generation Demo - Bon Iver Style",
+  "tempo": 75,
+  "tracks": [
+    {
+      "name": "Lead Vocal",
+      "instrument": "vocoder_synth",
+      "notes": [
+        {
+          "time": 0,
+          "duration": 2,
+          "value": 60,
+          "volume": 0.7,
+          "harmonize": [3, 7, 10, 15],
+          "harmonizeMix": 0.6,
+          "harmonizeLevels": [0.5, 0.4, 0.3, 0.2]
+        },
+        {
+          "time": 2,
+          "duration": 2,
+          "value": 62,
+          "volume": 0.7,
+          "harmonize": [3, 7, 10],
+          "harmonizeMix": 0.5
+        },
+        {
+          "time": 4,
+          "duration": 2,
+          "value": 64,
+          "volume": 0.7,
+          "harmonize": [4, 7, 12],
+          "harmonizeMix": 0.6
+        },
+        {
+          "time": 6,
+          "duration": 2,
+          "value": 60,
+          "volume": 0.7,
+          "harmonize": [3, 7, 10, 15],
+          "harmonizeMix": 0.7,
+          "harmonizeLevels": [0.6, 0.5, 0.4, 0.3]
+        }
+      ],
+      "settings": {
+        "globalEffects": [
+          { "type": "reverb", "level": 0.4 },
+          { "type": "delay", "level": 0.2 }
+        ]
+      }
+    },
+    {
+      "name": "Piano",
+      "instrument": "piano",
+      "notes": [
+        {
+          "time": 0,
+          "duration": 8,
+          "value": [48, 52, 55],
+          "volume": 0.4
+        },
+        {
+          "time": 0,
+          "duration": 1,
+          "value": 60,
+          "volume": 0.3
+        },
+        {
+          "time": 1,
+          "duration": 1,
+          "value": 62,
+          "volume": 0.3
+        },
+        {
+          "time": 2,
+          "duration": 1,
+          "value": 64,
+          "volume": 0.3
+        },
+        {
+          "time": 3,
+          "duration": 1,
+          "value": 67,
+          "volume": 0.3
+        },
+        {
+          "time": 4,
+          "duration": 1,
+          "value": 64,
+          "volume": 0.3
+        },
+        {
+          "time": 5,
+          "duration": 1,
+          "value": 62,
+          "volume": 0.3
+        },
+        {
+          "time": 6,
+          "duration": 2,
+          "value": 60,
+          "volume": 0.3
+        }
+      ],
+      "settings": {
+        "globalEffects": [
+          { "type": "reverb", "level": 0.3 }
+        ]
+      }
+    },
+    {
+      "name": "Harmony Test",
+      "instrument": "pad_synth",
+      "notes": [
+        {
+          "time": 8,
+          "duration": 2,
+          "value": 48,
+          "volume": 0.5,
+          "harmonize": [12, -12],
+          "harmonizeMix": 0.5
+        },
+        {
+          "time": 10,
+          "duration": 2,
+          "value": 50,
+          "volume": 0.5,
+          "harmonize": [7, 12, 19],
+          "harmonizeMix": 0.6
+        },
+        {
+          "time": 12,
+          "duration": 2,
+          "value": 52,
+          "volume": 0.5,
+          "harmonize": [5, 7, 12],
+          "harmonizeMix": 0.6
+        },
+        {
+          "time": 14,
+          "duration": 2,
+          "value": 48,
+          "volume": 0.5,
+          "harmonize": [3, 6, 11],
+          "harmonizeMix": 0.5
+        }
+      ],
+      "settings": {
+        "globalEffects": [
+          { "type": "reverb", "level": 0.6 }
+        ]
+      }
+    }
+  ]
+}

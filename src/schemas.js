@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from '../node_modules/zod/lib/index.mjs';
 
 export const DrumNoteSchema = z.enum(['kick', 'snare']);
 
@@ -50,9 +50,14 @@ export const NoteSchema = z.object({
   duration: z.number().min(0.1),
   value: z.union([DrumNoteSchema, PitchNoteSchema, ChordSchema, ChordShortcutSchema]),
   volume: z.number().min(0).max(1).default(0.7),
-  effect: z.enum(['reverb', 'delay', 'distortion', 'chorus', 'phaser', 'filter', 'echo', 'tremolo', 'bitcrush', 'wah']).optional(),
+  effect: z.enum(['reverb', 'delay', 'distortion', 'chorus', 'phaser', 'filter', 'echo', 'tremolo', 'bitcrush', 'wah', 'freezeReverb', 'pitchShift', 'harmonizer']).optional(),
   effectLevel: z.number().min(0).max(1).optional(),
-  repeat: z.number().int().min(2).optional()
+  repeat: z.number().int().min(2).optional(),
+  pitch: z.number().min(-24).max(24).optional(),
+  formant: z.number().min(-5).max(5).optional(),
+  harmonize: z.array(z.number().min(-24).max(24)).optional(),
+  harmonizeMix: z.number().min(0).max(1).optional(),
+  harmonizeLevels: z.array(z.number().min(0).max(1)).optional()
 }).refine(data => {
   if (data.effect && !data.effectLevel) {
     data.effectLevel = 0.5;
@@ -61,7 +66,7 @@ export const NoteSchema = z.object({
 });
 
 export const GlobalEffectSchema = z.object({
-  type: z.enum(['reverb', 'delay', 'distortion', 'chorus', 'phaser', 'filter', 'echo', 'tremolo', 'bitcrush', 'wah']),
+  type: z.enum(['reverb', 'delay', 'distortion', 'chorus', 'phaser', 'filter', 'echo', 'tremolo', 'bitcrush', 'wah', 'freezeReverb', 'pitchShift', 'harmonizer']),
   level: z.number().min(0).max(1).default(0.5)
 });
 
@@ -79,11 +84,11 @@ export const TrackSettingsSchema = z.object({
 
 export const TrackSchema = z.object({
   name: z.string().min(1),
-  instrument: z.enum(['synth_lead', 'synth_bass', 'piano', 'strings', 'brass', 'drums_kit', 'electric_guitar', 'organ', 'flute', 'harp', 'drums_electronic', 'marimba', 'trumpet', 'violin', 'saxophone', 'pad_synth', 'celesta', 'vibraphone', 'xylophone', 'clarinet', 'tuba', 'choir', 'banjo', 'electric_piano']),
+  instrument: z.enum(['synth_lead', 'synth_bass', 'piano', 'strings', 'brass', 'drums_kit', 'electric_guitar', 'organ', 'flute', 'harp', 'drums_electronic', 'marimba', 'trumpet', 'violin', 'saxophone', 'pad_synth', 'celesta', 'vibraphone', 'xylophone', 'clarinet', 'tuba', 'choir', 'banjo', 'electric_piano', 'granular_pad', 'vocoder_synth']),
   notes: z.array(NoteSchema),
   settings: TrackSettingsSchema
 }).refine((track) => {
-  const melodicInstruments = ['synth_lead', 'synth_bass', 'piano', 'strings', 'brass', 'electric_guitar', 'organ', 'flute', 'harp', 'marimba', 'trumpet', 'violin', 'saxophone', 'pad_synth', 'celesta', 'vibraphone', 'xylophone', 'clarinet', 'tuba', 'choir', 'banjo', 'electric_piano'];
+  const melodicInstruments = ['synth_lead', 'synth_bass', 'piano', 'strings', 'brass', 'electric_guitar', 'organ', 'flute', 'harp', 'marimba', 'trumpet', 'violin', 'saxophone', 'pad_synth', 'celesta', 'vibraphone', 'xylophone', 'clarinet', 'tuba', 'choir', 'banjo', 'electric_piano', 'granular_pad', 'vocoder_synth'];
 
   if (melodicInstruments.includes(track.instrument)) {
     return track.notes.every(note =>
@@ -99,10 +104,27 @@ export const TrackSchema = z.object({
   message: 'Track notes must match instrument type: melodic instruments accept pitch notation (e.g. "C4") or chord arrays, drums_kit/drums_electronic accepts "kick" or "snare"'
 });
 
+// Live Input Effect Configuration
+export const LiveInputEffectSchema = z.object({
+  type: z.enum(['reverb', 'delay', 'distortion', 'chorus', 'phaser', 'filter', 'echo', 'tremolo', 'bitcrush', 'wah', 'freezeReverb', 'pitchShift', 'harmonizer']),
+  mix: z.number().min(0).max(1).default(0.5),
+  params: z.record(z.any()).optional(),
+  intervals: z.array(z.number().min(-24).max(24)).optional() // For harmonizer
+});
+
+// Live Input Configuration
+export const LiveInputSchema = z.object({
+  monitor: z.boolean().default(true),
+  effects: z.array(LiveInputEffectSchema).default([]),
+  recordArmed: z.boolean().default(false),
+  outputTrack: z.string().optional() // Target track name for recording
+}).optional();
+
 export const MusicDataSchema = z.object({
   title: z.string().min(1),
-  tempo: z.number().min(60).max(200),
-  tracks: z.array(TrackSchema).min(1)
+  tempo: z.number().min(20).max(300),
+  tracks: z.array(TrackSchema).min(1),
+  live_input: LiveInputSchema
 });
 
 export const defaultMusicData = {

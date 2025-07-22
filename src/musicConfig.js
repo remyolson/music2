@@ -120,6 +120,16 @@ export const instruments = {
     name: 'Electric Piano',
     description: 'Rhodes-style electric piano',
     acceptsNotes: 'pitch'
+  },
+  granular_pad: {
+    name: 'Granular Pad',
+    description: 'Lush atmospheric pad with evolving textures',
+    acceptsNotes: 'pitch'
+  },
+  vocoder_synth: {
+    name: 'Vocoder Synth',
+    description: 'Vocoder-style synthesizer with formant filtering and pitch correction',
+    acceptsNotes: 'pitch'
   }
 };
 
@@ -163,8 +173,135 @@ export const effects = {
   wah: {
     name: 'Wah',
     description: 'Auto-wah envelope filter'
+  },
+  freezeReverb: {
+    name: 'Freeze Reverb',
+    description: 'Infinite sustain reverb with modulated tail'
+  },
+  pitchShift: {
+    name: 'Pitch Shift',
+    description: 'Real-time pitch shifting with formant preservation'
+  },
+  harmonizer: {
+    name: 'Harmonizer',
+    description: 'Multi-voice harmony generator with preset intervals'
   }
 };
+
+// Effect chain presets for atmospheric pads
+export const effectChainPresets = {
+  // Bon Iver-style vocal atmosphere
+  bonIverVocal: {
+    name: 'Bon Iver Vocal',
+    description: 'Layered vocal atmosphere with harmonics',
+    effects: [
+      { type: 'reverb', level: 0.7 },
+      { type: 'chorus', level: 0.4 },
+      { type: 'delay', level: 0.3 },
+      { type: 'freezeReverb', level: 0.5 }
+    ],
+    settings: {
+      noteTransition: 'smooth',
+      envelope: {
+        attack: 0.8,
+        decay: 0.5,
+        sustain: 0.7,
+        release: 3.0
+      }
+    }
+  },
+  
+  // Ambient drone pad
+  ambientDrone: {
+    name: 'Ambient Drone',
+    description: 'Deep, evolving drone texture',
+    effects: [
+      { type: 'freezeReverb', level: 0.8 },
+      { type: 'filter', level: 0.3 },
+      { type: 'phaser', level: 0.2 }
+    ],
+    settings: {
+      noteTransition: 'smooth',
+      envelope: {
+        attack: 2.0,
+        decay: 1.0,
+        sustain: 0.9,
+        release: 5.0
+      }
+    }
+  },
+  
+  // Shimmering pad
+  shimmerPad: {
+    name: 'Shimmer Pad',
+    description: 'Bright, shimmering atmospheric texture',
+    effects: [
+      { type: 'reverb', level: 0.9 },
+      { type: 'chorus', level: 0.6 },
+      { type: 'tremolo', level: 0.3 }
+    ],
+    settings: {
+      noteTransition: 'smooth',
+      envelope: {
+        attack: 1.5,
+        decay: 0.7,
+        sustain: 0.8,
+        release: 4.0
+      },
+      grainSize: 0.05,
+      grainDensity: 20,
+      shimmer: 0.7
+    }
+  },
+  
+  // Dark cinematic pad
+  cinematicDark: {
+    name: 'Cinematic Dark',
+    description: 'Dark, brooding cinematic atmosphere',
+    effects: [
+      { type: 'reverb', level: 0.8 },
+      { type: 'distortion', level: 0.1 },
+      { type: 'filter', level: 0.4 },
+      { type: 'freezeReverb', level: 0.3 }
+    ],
+    settings: {
+      noteTransition: 'smooth',
+      envelope: {
+        attack: 1.2,
+        decay: 0.8,
+        sustain: 0.6,
+        release: 3.5
+      }
+    }
+  },
+  
+  // Ethereal pad
+  ethereal: {
+    name: 'Ethereal',
+    description: 'Light, floating atmospheric texture',
+    effects: [
+      { type: 'reverb', level: 0.95 },
+      { type: 'echo', level: 0.4 },
+      { type: 'chorus', level: 0.3 }
+    ],
+    settings: {
+      noteTransition: 'legato',
+      portamento: 0.15,
+      envelope: {
+        attack: 2.5,
+        decay: 1.0,
+        sustain: 0.7,
+        release: 6.0
+      }
+    }
+  }
+};
+
+// Export available effect types for live chain builder
+export const availableEffectTypes = Object.keys(effects);
+
+// Export effect descriptions for UI
+export const effectDescriptions = effects;
 
 export function generateAIPrompt() {
   const instrumentList = Object.entries(instruments).map(([key, inst]) => 
@@ -173,6 +310,10 @@ export function generateAIPrompt() {
   
   const effectList = Object.entries(effects).map(([key, eff]) => 
     `  - "${key}": ${eff.description}`
+  ).join('\n');
+  
+  const effectPresetList = Object.entries(effectChainPresets).map(([key, preset]) => 
+    `  - "${key}": ${preset.description}`
   ).join('\n');
   
   return `You are an AI assistant for JSON Music Codec.
@@ -201,6 +342,11 @@ Schema (all fields required unless marked optional):
           "effect": string     // Optional: effect name (see below)
           "effectLevel": number // Optional: effect intensity 0-1
           "repeat": integer    // Optional: repeat count (2 or more) - automatically spaces notes by duration
+          "pitch": number      // Optional: pitch shift in semitones (-24 to +24)
+          "formant": number    // Optional: formant shift (-5 to +5) for vocoder_synth
+          "harmonize": array   // Optional: array of intervals for harmonizer effect (e.g., [3, 7, 12])
+          "harmonizeMix": number // Optional: harmonizer wet/dry mix (0-1)
+          "harmonizeLevels": array // Optional: individual harmony voice levels (0-1)
         }
       ],
       "settings": {            // Optional: instrument-level settings
@@ -230,7 +376,7 @@ Available Effects (optional for any note):
 ${effectList}
 
 Instrument Contract:
-• Melodic instruments (synth_lead, synth_bass, piano, strings, brass, electric_guitar, organ, flute, harp, marimba, trumpet, violin, saxophone, pad_synth) → value can be:
+• Melodic instruments (synth_lead, synth_bass, piano, strings, brass, electric_guitar, organ, flute, harp, marimba, trumpet, violin, saxophone, pad_synth, celesta, vibraphone, xylophone, clarinet, tuba, choir, banjo, electric_piano, granular_pad, vocoder_synth) → value can be:
   - Single note: valid scientific pitch notation (A0–C8, with optional # for sharp) like "C4", "F#5"
   - Chord array: array of 2-6 notes like ["C4", "E4", "G4"] for simultaneous notes
   - Chord shortcut: "Cmaj4", "Dmin5", "G73", "Fmaj74" (root + type + octave)
@@ -262,6 +408,38 @@ Chord Notation:
 • Use chord shortcuts for common chords: "Cmaj4" (C major in octave 4)
 • Combine with smooth transitions and reverb for lush sound
 • Piano, strings, organ, and pad_synth work best with chords
+
+Vocal Effects Features:
+• Pitch Shifting: Add "pitch" parameter to any note (-24 to +24 semitones)
+  - Use with "pitchShift" effect or standalone pitch parameter
+  - Great for harmonies and vocal effects
+• Vocoder Synth: Special instrument with formant filtering
+  - Add "formant" parameter to notes (-5 to +5) to shift vocal character
+  - Built-in pitch correction and smooth portamento
+  - Perfect for Bon Iver-style processed vocals
+• Harmonizer: Create multi-voice harmonies with the "harmonize" parameter
+  - Array of intervals: [3, 7, 12] creates minor 3rd, 5th, and octave
+  - Use "harmonizeMix" (0-1) to blend harmonies with dry signal
+  - "harmonizeLevels" array sets individual voice levels
+  - Presets: bon_iver [3, 7, 10, 15] for signature sound
+• Combine pitch shifting with reverb and delay for ethereal vocal textures
+
+Performance Features (v2.0):
+• Web Audio Worklet offloading for CPU-intensive effects (automatic)
+• Track freezing to reduce CPU usage for complex arrangements
+• Live vocal input with real-time effects processing
+• Effect chain presets for quick Bon Iver-style sounds
+• Enhanced visualizers: Waveform, Formant Analysis, Spectrum, Harmony
+• Keyboard shortcuts:
+  - Space: Play/Stop
+  - S + [1-9]: Solo track
+  - M + [1-9]: Mute/Unmute track
+  - C: Clear all selections
+  - E: Effect presets menu
+  - ?: Show help
+
+Effect Chain Presets (use in settings.globalEffects):
+${effectPresetList}
 
 Example (with chords and smooth sound):
 {

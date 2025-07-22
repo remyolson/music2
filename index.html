@@ -17,8 +17,23 @@
           <p>Compose music with human-readable JSON</p>
         </div>
         <div class="audio-visualizer">
+          <div class="visualizer-selector">
+            <select id="visualizer-select" class="visualizer-dropdown">
+              <option value="spectrum">Spectrum</option>
+              <option value="waveform">Waveform</option>
+              <option value="formant">Formant Analysis</option>
+              <option value="spectrum-analyzer">Spectrum Analyzer</option>
+              <option value="harmony">Harmony Visualization</option>
+            </select>
+          </div>
           <canvas id="audio-spectrum"></canvas>
+          <div id="waveform-viz" class="header-viz" style="display: none;"></div>
+          <div id="formant-viz" class="header-viz" style="display: none;"></div>
+          <div id="spectrum-viz" class="header-viz" style="display: none;"></div>
+          <div id="harmony-viz" class="header-viz" style="display: none;"></div>
+          <div id="effect-chain-viz" class="header-viz" style="display: none;"></div>
         </div>
+        <div id="audio-health-meter"></div>
       </div>
     </header>
 
@@ -44,6 +59,8 @@
           <div class="controls">
             <button id="play-button" class="control-button">▶ Play</button>
             <button id="stop-button" class="control-button">■ Stop</button>
+            <button id="live-input-button" class="control-button">🎤 Live Input</button>
+            <div id="effect-preset-container"></div>
             <div class="zoom-control">
               <label for="zoom-slider">Zoom:</label>
               <input type="range" id="zoom-slider" min="1" max="5" step="0.1" value="2">
@@ -54,6 +71,7 @@
           <svg id="piano-roll" width="100%" height="100%"></svg>
         </div>
       </div>
+
     </main>
 
     <footer>
@@ -62,6 +80,50 @@
   </div>
 
   <input type="file" id="file-input" accept=".json" style="display: none;">
+  
+  <!-- Live Input Modal -->
+  <div id="live-input-modal" class="modal">
+    <div class="modal-content">
+      <h3>Live Vocal Input</h3>
+      <p>Enable microphone access to use live vocal effects and real-time processing.</p>
+      
+      <div class="live-input-settings">
+        <label>
+          <input type="checkbox" id="live-monitor" checked>
+          Enable monitoring (hear processed audio)
+        </label>
+        <label>
+          <input type="checkbox" id="echo-cancel">
+          Echo cancellation
+        </label>
+        <label>
+          <input type="checkbox" id="noise-suppress">
+          Noise suppression
+        </label>
+      </div>
+      
+      <div class="latency-info" id="latency-info" style="display: none;">
+        <span>Latency: <span id="latency-value">--</span> ms</span>
+      </div>
+      
+      <div class="live-chain-builder" id="live-chain-builder" style="display: none;">
+        <h4>Effect Chain</h4>
+        <div id="live-effect-chain"></div>
+        <button id="add-effect-btn" class="control-button">+ Add Effect</button>
+      </div>
+      
+      <div class="modal-actions">
+        <button id="start-live-input" class="control-button">Start</button>
+        <button id="stop-live-input" class="control-button" style="display: none;">Stop</button>
+        <button id="record-live-input" class="control-button" style="display: none;">🔴 Record</button>
+        <button id="stop-recording" class="control-button" style="display: none;">⏹ Stop Rec</button>
+        <button id="close-modal" class="control-button">Close</button>
+      </div>
+      
+      <div id="permission-error" class="error-message" style="display: none;"></div>
+    </div>
+  </div>
+  
   <script type="module" src="/src/main.js"></script>
 </body>
 
