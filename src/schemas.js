@@ -3,32 +3,37 @@ import { z } from '../node_modules/zod/lib/index.mjs';
 export const DrumNoteSchema = z.enum(['kick', 'snare']);
 
 export const PitchNoteSchema = z.string()
-  .regex(/^[A-G]#?[0-8]$/, 'Invalid pitch notation. Use format like C4, F#5')
+  .regex(/^[A-G](#|b)?[0-8]$/, 'Invalid pitch notation. Use format like C4, F#5, Bb3')
   .transform(note => {
     const noteMap = {
-      'C': 0, 'C#': 1, 'D': 2, 'D#': 3, 'E': 4, 'F': 5,
-      'F#': 6, 'G': 7, 'G#': 8, 'A': 9, 'A#': 10, 'B': 11
+      'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3, 'E': 4, 'F': 5,
+      'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8, 'Ab': 8, 'A': 9, 'A#': 10, 'Bb': 10, 'B': 11
     };
 
-    const noteName = note.slice(0, -1);
-    const octave = parseInt(note.slice(-1));
+    const match = note.match(/^([A-G])(#|b)?([0-8])$/);
+    if (!match) throw new Error('Invalid pitch notation');
+    
+    const noteName = match[1] + (match[2] || '');
+    const octave = parseInt(match[3]);
 
     return noteMap[noteName] + (octave * 12);
   });
 
-export const ChordSchema = z.array(PitchNoteSchema).min(2).max(6);
+export const ChordSchema = z.array(PitchNoteSchema).min(2).max(8);
 
 export const ChordShortcutSchema = z.string()
-  .regex(/^[A-G]#?(maj|min|dim|7|maj7|min7)[0-8]?$/, 'Invalid chord notation. Use format like Cmaj4, F#min5')
+  .regex(/^[A-G](#|b)?(maj|min|dim|aug|7|maj7|min7|dim7|sus2|sus4)[0-8]?$/, 'Invalid chord notation. Use format like Cmaj4, F#min5, Bbdim7')
   .transform(chord => {
-    const match = chord.match(/^([A-G]#?)(maj|min|dim|7|maj7|min7)([0-8])?$/);
-    const root = match[1];
-    const type = match[2];
-    const octave = match[3] ? parseInt(match[3]) : 4; // Default octave 4
+    const match = chord.match(/^([A-G])(#|b)?(maj|min|dim|aug|7|maj7|min7|dim7|sus2|sus4)([0-8])?$/);
+    if (!match) throw new Error('Invalid chord notation');
+    
+    const root = match[1] + (match[2] || '');
+    const type = match[3];
+    const octave = match[4] ? parseInt(match[4]) : 4; // Default octave 4
 
     const noteMap = {
-      'C': 0, 'C#': 1, 'D': 2, 'D#': 3, 'E': 4, 'F': 5,
-      'F#': 6, 'G': 7, 'G#': 8, 'A': 9, 'A#': 10, 'B': 11
+      'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3, 'E': 4, 'F': 5,
+      'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8, 'Ab': 8, 'A': 9, 'A#': 10, 'Bb': 10, 'B': 11
     };
 
     const rootMidi = noteMap[root] + (octave * 12);
@@ -37,9 +42,13 @@ export const ChordShortcutSchema = z.string()
       'maj': [0, 4, 7],
       'min': [0, 3, 7],
       'dim': [0, 3, 6],
+      'aug': [0, 4, 8],
       '7': [0, 4, 7, 10],
       'maj7': [0, 4, 7, 11],
-      'min7': [0, 3, 7, 10]
+      'min7': [0, 3, 7, 10],
+      'dim7': [0, 3, 6, 9],
+      'sus2': [0, 2, 7],
+      'sus4': [0, 5, 7]
     };
 
     return intervals[type].map(interval => rootMidi + interval);
@@ -79,16 +88,123 @@ export const TrackSettingsSchema = z.object({
     decay: z.number().min(0).max(2).optional(),
     sustain: z.number().min(0).max(1).optional(),
     release: z.number().min(0).max(5).optional()
+  }).optional(),
+  humanPerformance: z.object({
+    enabled: z.boolean().optional(),
+    style: z.enum(['natural', 'tight', 'loose', 'jazz', 'classical']).optional(),
+    swing: z.number().min(0).max(1).optional(),
+    rubato: z.number().min(0).max(1).optional(),
+    timing: z.number().min(0).max(1).optional(),
+    dynamics: z.number().min(0).max(1).optional()
+  }).optional(),
+  articulation: z.string().optional(),
+  vibrato: z.object({
+    rate: z.number().min(3).max(8).optional(),
+    depth: z.number().min(0).max(1).optional()
+  }).optional(),
+  breath: z.object({
+    amount: z.number().min(0).max(1).optional(),
+    pressure: z.number().min(0).max(2).optional()
   }).optional()
 }).optional();
 
 export const TrackSchema = z.object({
   name: z.string().min(1),
-  instrument: z.enum(['synth_lead', 'synth_bass', 'piano', 'strings', 'brass', 'drums_kit', 'electric_guitar', 'organ', 'flute', 'harp', 'drums_electronic', 'marimba', 'trumpet', 'violin', 'saxophone', 'pad_synth', 'celesta', 'vibraphone', 'xylophone', 'clarinet', 'tuba', 'choir', 'banjo', 'electric_piano', 'granular_pad', 'vocoder_synth']),
+  instrument: z.enum([
+    // Professional Natural Sample-Based Instruments
+    'natural_piano',
+    'orchestral_violin',
+    'orchestral_viola', 
+    'orchestral_cello',
+    'orchestral_double_bass',
+    'orchestral_flute',
+    'orchestral_clarinet',
+    'orchestral_oboe',
+    'orchestral_bassoon',
+    'orchestral_saxophone',
+    'orchestral_trumpet',
+    'orchestral_french_horn',
+    'orchestral_trombone',
+    'orchestral_tuba',
+    'string_section',
+    'woodwind_section',
+    'brass_section',
+    // Original Synthesized Instruments
+    'synth_lead', 
+    'synth_bass', 
+    'piano', 
+    'strings', 
+    'brass', 
+    'drums_kit', 
+    'electric_guitar', 
+    'organ', 
+    'flute', 
+    'harp', 
+    'drums_electronic', 
+    'marimba', 
+    'trumpet', 
+    'violin', 
+    'saxophone', 
+    'pad_synth', 
+    'celesta', 
+    'vibraphone', 
+    'xylophone', 
+    'clarinet', 
+    'tuba', 
+    'choir', 
+    'banjo', 
+    'electric_piano', 
+    'granular_pad', 
+    'vocoder_synth'
+  ]),
   notes: z.array(NoteSchema),
   settings: TrackSettingsSchema
 }).refine((track) => {
-  const melodicInstruments = ['synth_lead', 'synth_bass', 'piano', 'strings', 'brass', 'electric_guitar', 'organ', 'flute', 'harp', 'marimba', 'trumpet', 'violin', 'saxophone', 'pad_synth', 'celesta', 'vibraphone', 'xylophone', 'clarinet', 'tuba', 'choir', 'banjo', 'electric_piano', 'granular_pad', 'vocoder_synth'];
+  const melodicInstruments = [
+    // Professional Natural Sample-Based Instruments
+    'natural_piano',
+    'orchestral_violin',
+    'orchestral_viola', 
+    'orchestral_cello',
+    'orchestral_double_bass',
+    'orchestral_flute',
+    'orchestral_clarinet',
+    'orchestral_oboe',
+    'orchestral_bassoon',
+    'orchestral_saxophone',
+    'orchestral_trumpet',
+    'orchestral_french_horn',
+    'orchestral_trombone',
+    'orchestral_tuba',
+    'string_section',
+    'woodwind_section',
+    'brass_section',
+    // Original Synthesized Instruments
+    'synth_lead', 
+    'synth_bass', 
+    'piano', 
+    'strings', 
+    'brass', 
+    'electric_guitar', 
+    'organ', 
+    'flute', 
+    'harp', 
+    'marimba', 
+    'trumpet', 
+    'violin', 
+    'saxophone', 
+    'pad_synth', 
+    'celesta', 
+    'vibraphone', 
+    'xylophone', 
+    'clarinet', 
+    'tuba', 
+    'choir', 
+    'banjo', 
+    'electric_piano', 
+    'granular_pad', 
+    'vocoder_synth'
+  ];
 
   if (melodicInstruments.includes(track.instrument)) {
     return track.notes.every(note =>
