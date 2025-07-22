@@ -89,10 +89,24 @@ export class SoundFontLoader {
       onerror: (error) => console.error('Sample loading error:', error),
     };
 
-    const samplerOptions = { ...defaultOptions, ...options, urls: samples };
-    const sampler = this.registry.register(new Tone.Sampler(samplerOptions));
+    // Filter out null/undefined values that can cause Tone.js errors
+    const cleanOptions = {};
+    Object.entries({ ...defaultOptions, ...options }).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        cleanOptions[key] = value;
+      }
+    });
+
+    const samplerOptions = { ...cleanOptions, urls: samples };
     
-    return sampler;
+    try {
+      const sampler = this.registry.register(new Tone.Sampler(samplerOptions));
+      return sampler;
+    } catch (error) {
+      console.warn('Failed to create Tone.Sampler, creating fallback:', error);
+      // Return a simple PolySynth as fallback
+      return this.registry.register(new Tone.PolySynth(Tone.Synth));
+    }
   }
 
   /**

@@ -776,19 +776,44 @@ export async function createInstrumentWithEffects(track, getMasterBus) {
     // Filter out any undefined or null effects before chaining
     const validEffects = effectChain.filter(effect => effect != null);
     if (validEffects.length > 0) {
-      instrument.kick.chain(...validEffects, getMasterBus());
-      instrument.snare.chain(...validEffects, getMasterBus());
+      if (instrument.kick && instrument.kick.chain) {
+        instrument.kick.chain(...validEffects, getMasterBus());
+      }
+      if (instrument.snare && instrument.snare.chain) {
+        instrument.snare.chain(...validEffects, getMasterBus());
+      }
     } else {
-      instrument.kick.connect(getMasterBus());
-      instrument.snare.connect(getMasterBus());
+      if (instrument.kick && instrument.kick.connect) {
+        instrument.kick.connect(getMasterBus());
+      }
+      if (instrument.snare && instrument.snare.connect) {
+        instrument.snare.connect(getMasterBus());
+      }
     }
   } else {
+    // Ensure instrument exists and has required methods
+    if (!instrument) {
+      console.error('Instrument is undefined for track:', track.name);
+      return { instrument: null, effectChain: [] };
+    }
+    
     // Filter out any undefined or null effects before chaining
     const validEffects = effectChain.filter(effect => effect != null);
     if (validEffects.length > 0) {
-      instrument.chain(...validEffects, getMasterBus());
+      if (instrument.chain && typeof instrument.chain === 'function') {
+        instrument.chain(...validEffects, getMasterBus());
+      } else {
+        console.warn(`Instrument ${track.instrument} missing chain method, trying connect`);
+        if (instrument.connect && typeof instrument.connect === 'function') {
+          instrument.connect(getMasterBus());
+        }
+      }
     } else {
-      instrument.connect(getMasterBus());
+      if (instrument.connect && typeof instrument.connect === 'function') {
+        instrument.connect(getMasterBus());
+      } else {
+        console.error(`Instrument ${track.instrument} missing connect method`);
+      }
     }
   }
 
