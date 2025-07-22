@@ -1,5 +1,5 @@
 // Enhanced visualizer components for waveform, formant, and effect chain visualization
-import * as Tone from '../node_modules/tone/build/esm/index.js';
+import * as Tone from 'tone';
 
 export class WaveformVisualizer {
   constructor(containerId) {

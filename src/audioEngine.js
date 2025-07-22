@@ -1,4 +1,4 @@
-import * as Tone from '../node_modules/tone/build/esm/index.js';
+import * as Tone from 'tone';
 import { performanceOptimizer } from './performanceOptimizer.js';
 import { updateLiveInputState } from './state.js';
 import { audioHealthMonitor } from './audioHealthMonitor.js';

@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import path from 'path';
 
 export default defineConfig({
   test: {
@@ -13,5 +14,10 @@ export default defineConfig({
       ]
     },
     setupFiles: ['./test/setup.js']
+  },
+  resolve: {
+    alias: {
+      'tone': path.resolve(__dirname, 'test/mocks/tone.js')
+    }
   }
 });

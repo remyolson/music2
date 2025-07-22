@@ -1,7 +1,7 @@
 /**
  * Instrument Factory - Creates and manages musical instruments
  */
-import * as Tone from '../../../node_modules/tone/build/esm/index.js';
+import * as Tone from 'tone';
 import {
   INSTRUMENT_DEFAULTS,
   DRUM_PITCHES,

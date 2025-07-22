@@ -1,7 +1,7 @@
 /**
  * Master Bus Management - Handles global audio routing and effects
  */
-import * as Tone from '../../../node_modules/tone/build/esm/index.js';
+import * as Tone from 'tone';
 import { MASTER_BUS_CONFIG } from '../constants/index.js';
 import { availableEffects } from '../effects/EffectFactory.js';
 import { audioHealthMonitor } from '../../audioHealthMonitor.js';
@@ -13,13 +13,18 @@ let masterEffectChain = [];
 let masterLimiter = null;
 let masterCompressor = null;
 let masterHighpass = null;
-const masterRegistry = new DisposalRegistry('masterBus');
+let masterRegistry = new DisposalRegistry('masterBus');
 
 /**
  * Initialize master bus with processing chain
  * @returns {Tone.Gain} The master bus
  */
 function initializeMasterBus() {
+  // Recreate registry if it was disposed
+  if (!masterRegistry || masterRegistry.disposed) {
+    masterRegistry = new DisposalRegistry('masterBus');
+  }
+  
   if (!masterBus) {
     masterBus = new Tone.Gain(MASTER_BUS_CONFIG.gain);
     masterRegistry.register(masterBus);

@@ -1,7 +1,7 @@
 /**
  * Live Input Management - Handles live audio input, effects, and recording
  */
-import * as Tone from '../../../node_modules/tone/build/esm/index.js';
+import * as Tone from 'tone';
 import { updateLiveInputState } from '../../state.js';
 import { availableEffects } from '../effects/EffectFactory.js';
 import { DisposalRegistry } from '../../utils/DisposalRegistry.js';
@@ -13,7 +13,7 @@ let liveInputMonitoringBus = null;
 let liveInputRecorder = null;
 let isLiveInputActive = false;
 let liveInputLatency = 0;
-const liveInputRegistry = new DisposalRegistry('liveInput');
+let liveInputRegistry = new DisposalRegistry('liveInput');
 
 /**
  * Start live audio input
@@ -28,6 +28,10 @@ export async function startLiveInput(config = {}, getMasterBus) {
   }
 
   try {
+    // Recreate registry if it was disposed
+    if (!liveInputRegistry || liveInputRegistry.disposed) {
+      liveInputRegistry = new DisposalRegistry('liveInput');
+    }
     // Start Tone.js context if not already started
     if (Tone.context.state !== 'running') {
       await Tone.start();
@@ -123,6 +127,7 @@ export async function stopLiveInput() {
     liveInputRecorder = null;
 
     isLiveInputActive = false;
+    liveInputLatency = 0;  // Reset latency
 
     // Update state
     updateLiveInputState({
@@ -318,4 +323,21 @@ export function getLiveInputStatus() {
     recording: liveInputRecorder !== null,
     effectCount: liveInputEffectChain.length
   };
+}
+
+/**
+ * Reset live input state (for testing purposes)
+ * @private
+ */
+export function resetLiveInputState() {
+  liveInput = null;
+  liveInputEffectChain = [];
+  liveInputMonitoringBus = null;
+  liveInputRecorder = null;
+  isLiveInputActive = false;
+  liveInputLatency = 0;
+  if (liveInputRegistry && !liveInputRegistry.disposed) {
+    liveInputRegistry.dispose();
+  }
+  liveInputRegistry = new DisposalRegistry('liveInput');
 }

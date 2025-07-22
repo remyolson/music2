@@ -1,7 +1,7 @@
 /**
  * Effect Factory - Creates and manages audio effects
  */
-import * as Tone from '../../../node_modules/tone/build/esm/index.js';
+import * as Tone from 'tone';
 import {
   EFFECT_DEFAULTS,
   FREEZE_REVERB_CONFIG,

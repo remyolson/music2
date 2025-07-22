@@ -15,11 +15,12 @@
 - **Live Input Module**: Created `LiveInput.js` with all live audio functionality
 - **Master Bus Module**: Created `MasterBus.js` with global audio routing
 - **audioEngine.js Refactoring**: Reduced from 1774 to 552 lines (69% reduction)
+- **DisposalRegistry Pattern**: Applied to all extracted modules for memory safety
 
 ### 🚧 In Progress
-- Applying DisposalRegistry pattern throughout codebase
 - Implementing comprehensive test coverage
 - Setting up TypeScript with JSDoc
+- Implementing lazy loading for instruments
 
 ### 📝 Next Steps
 - Apply DisposalRegistry pattern to all modules

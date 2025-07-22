@@ -1,6 +1,6 @@
 import { getTransport, applyTrackSelection, freezeTrack, unfreezeTrack, isTrackFrozen } from './audioEngine.js';
 import { updateJSONDisplay } from './inputHandler.js';
-import * as Tone from '../node_modules/tone/build/esm/index.js';
+import * as Tone from 'tone';
 
 let svg = null;
 let playhead = null;
