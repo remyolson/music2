@@ -213,15 +213,32 @@ function createInstrument(type, settings) {
       });
 
     case 'strings':
-      return new Tone.PolySynth(Tone.Synth, {
-        oscillator: { type: 'sawtooth' },
+      const stringSynth = new Tone.PolySynth(Tone.FMSynth, {
+        harmonicity: 2.8,
+        modulationIndex: 5,
+        oscillator: { type: 'triangle' },
         envelope: {
           attack: envelope.attack ?? transitionSettings.attack ?? 0.4,
-          decay: envelope.decay ?? 0.2,
-          sustain: envelope.sustain ?? transitionSettings.sustain ?? 0.8,
+          decay: envelope.decay ?? 0.3,
+          sustain: envelope.sustain ?? transitionSettings.sustain ?? 0.7,
           release: envelope.release ?? transitionSettings.release ?? 2.0
+        },
+        modulation: { type: 'sine' },
+        modulationEnvelope: {
+          attack: 0.35,
+          decay: 0.3,
+          sustain: 0.7,
+          release: 1.5
         }
       });
+      // Add a lowpass filter to remove high frequency buzz
+      const stringFilter = new Tone.Filter({
+        type: 'lowpass',
+        frequency: 2000,
+        rolloff: -24
+      });
+      stringSynth.connect(stringFilter);
+      return stringFilter;
 
     case 'brass':
       return new Tone.MonoSynth({
@@ -445,6 +462,158 @@ function createInstrument(type, settings) {
           decay: envelope.decay ?? 0.5,
           sustain: envelope.sustain ?? 0.7,
           release: envelope.release ?? transitionSettings.release ?? 2.0
+        }
+      });
+
+    case 'celesta':
+      return new Tone.PolySynth(Tone.FMSynth, {
+        harmonicity: 3.5,
+        modulationIndex: 15,
+        oscillator: { type: 'sine' },
+        envelope: {
+          attack: envelope.attack ?? transitionSettings.attack ?? 0.002,
+          decay: envelope.decay ?? 1.5,
+          sustain: envelope.sustain ?? 0.0,
+          release: envelope.release ?? transitionSettings.release ?? 1.5
+        },
+        modulation: { type: 'sine' },
+        modulationEnvelope: {
+          attack: 0.001,
+          decay: 0.5,
+          sustain: 0.0,
+          release: 0.5
+        }
+      });
+
+    case 'vibraphone':
+      const vibeSynth = new Tone.PolySynth(Tone.FMSynth, {
+        harmonicity: 1,
+        modulationIndex: 10,
+        oscillator: { type: 'sine' },
+        envelope: {
+          attack: envelope.attack ?? transitionSettings.attack ?? 0.01,
+          decay: envelope.decay ?? 2.0,
+          sustain: envelope.sustain ?? 0.2,
+          release: envelope.release ?? transitionSettings.release ?? 2.0
+        },
+        modulation: { type: 'sine' },
+        modulationEnvelope: {
+          attack: 0.01,
+          decay: 0.5,
+          sustain: 0.2,
+          release: 0.5
+        }
+      });
+      // Add vibrato for authentic vibraphone sound
+      const vibrato = new Tone.Vibrato({
+        frequency: 5,
+        depth: 0.1
+      });
+      vibeSynth.connect(vibrato);
+      return vibrato;
+
+    case 'xylophone':
+      return new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'triangle' },
+        envelope: {
+          attack: envelope.attack ?? transitionSettings.attack ?? 0.001,
+          decay: envelope.decay ?? 0.3,
+          sustain: envelope.sustain ?? 0.0,
+          release: envelope.release ?? transitionSettings.release ?? 0.5
+        }
+      });
+
+    case 'clarinet':
+      return new Tone.MonoSynth({
+        oscillator: { type: 'square' },
+        envelope: {
+          attack: envelope.attack ?? transitionSettings.attack ?? 0.05,
+          decay: envelope.decay ?? 0.2,
+          sustain: envelope.sustain ?? 0.7,
+          release: envelope.release ?? transitionSettings.release ?? 0.3
+        },
+        filterEnvelope: {
+          attack: 0.05,
+          decay: 0.2,
+          sustain: 0.6,
+          release: 0.3,
+          baseFrequency: 800,
+          octaves: 1.5
+        },
+        portamento: portamentoTime
+      });
+
+    case 'tuba':
+      return new Tone.MonoSynth({
+        oscillator: { type: 'sawtooth' },
+        envelope: {
+          attack: envelope.attack ?? transitionSettings.attack ?? 0.05,
+          decay: envelope.decay ?? 0.1,
+          sustain: envelope.sustain ?? 0.9,
+          release: envelope.release ?? transitionSettings.release ?? 0.5
+        },
+        filterEnvelope: {
+          attack: 0.05,
+          decay: 0.1,
+          sustain: 0.5,
+          release: 0.5,
+          baseFrequency: 150,
+          octaves: 2
+        },
+        portamento: portamentoTime
+      });
+
+    case 'choir':
+      const choirSynth = new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'fatsawtooth', count: 5, spread: 40 },
+        envelope: {
+          attack: envelope.attack ?? transitionSettings.attack ?? 0.4,
+          decay: envelope.decay ?? 0.2,
+          sustain: envelope.sustain ?? 0.8,
+          release: envelope.release ?? transitionSettings.release ?? 1.5
+        }
+      });
+      // Add filter for "ah" vowel sound
+      const choirFilter = new Tone.Filter({
+        type: 'bandpass',
+        frequency: 700,
+        Q: 5
+      });
+      choirSynth.connect(choirFilter);
+      return choirFilter;
+
+    case 'banjo':
+      return new Tone.PluckSynth({
+        attackNoise: 3,
+        dampening: 3500,
+        resonance: 0.95,
+        release: envelope.release ?? transitionSettings.release ?? 0.5
+      });
+
+    case 'electric_piano':
+      return new Tone.PolySynth(Tone.DuoSynth, {
+        vibratoAmount: 0.5,
+        vibratoRate: 5,
+        harmonicity: 1.5,
+        voice0: {
+          volume: -10,
+          oscillator: { type: 'sine' },
+          envelope: {
+            attack: envelope.attack ?? transitionSettings.attack ?? 0.001,
+            decay: envelope.decay ?? 0.3,
+            sustain: envelope.sustain ?? 0.5,
+            release: envelope.release ?? transitionSettings.release ?? 1.0
+          }
+        },
+        voice1: {
+          volume: -20,
+          oscillator: { type: 'sine' },
+          envelope: {
+            attack: envelope.attack ?? transitionSettings.attack ?? 0.001,
+            decay: envelope.decay ?? 0.3,
+            sustain: envelope.sustain ?? 0.5,
+            release: envelope.release ?? transitionSettings.release ?? 1.0
+          }
         }
       });
 

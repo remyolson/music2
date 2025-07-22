@@ -1,4 +1,5 @@
 import { getTransport, applyTrackSelection } from './audioEngine.js';
+import { updateJSONDisplay } from './inputHandler.js';
 import * as Tone from 'tone';
 
 let svg = null;
@@ -10,7 +11,7 @@ let zoomSlider = null;
 let trackCountElement = null;
 let jsonEditor = null;
 let lineNumbers = null;
-const selectedTracks = new Set();
+export const selectedTracks = new Set();
 
 function expandNotesWithRepeat(notes) {
   const expanded = [];
@@ -153,7 +154,25 @@ function drawTracks(musicData, pixelsPerBeat) {
         piano: '#ff00ff',
         strings: '#ffff00',
         brass: '#ff0088',
-        drums_kit: '#ff8800'
+        drums_kit: '#ff8800',
+        electric_guitar: '#00ffff',
+        organ: '#8800ff',
+        flute: '#88ff00',
+        harp: '#ff88ff',
+        drums_electronic: '#ff4400',
+        marimba: '#00ff00',
+        trumpet: '#ff6600',
+        violin: '#ff00cc',
+        saxophone: '#6600ff',
+        pad_synth: '#00ccff',
+        celesta: '#ccffcc',
+        vibraphone: '#ffccff',
+        xylophone: '#ccccff',
+        clarinet: '#ffcc88',
+        tuba: '#cc8800',
+        choir: '#ff88cc',
+        banjo: '#88cc00',
+        electric_piano: '#88ffcc'
       };
       rect.setAttribute('fill', instrumentColors[track.instrument] || '#888888');
       rect.setAttribute('rx', 2);
@@ -319,12 +338,18 @@ function handleTrackClick(trackIndex) {
   // Apply muting based on selection
   applyTrackSelection(selectedTracks);
 
-  // Navigate JSON to track name line
-  const lineNumber = findTrackNameLine(trackIndex);
-  if (lineNumber !== -1) {
-    const lineHeight = parseFloat(getComputedStyle(jsonEditor).lineHeight);
-    jsonEditor.scrollTop = (lineNumber - 1) * lineHeight;
-    highlightTrackNameInEditor(trackIndex);
+  // Update JSON display to show only selected tracks
+  updateJSONDisplay();
+
+  // Don't navigate to specific lines when filtering is active
+  if (selectedTracks.size === 0) {
+    // Navigate JSON to track name line only when showing full JSON
+    const lineNumber = findTrackNameLine(trackIndex);
+    if (lineNumber !== -1) {
+      const lineHeight = parseFloat(getComputedStyle(jsonEditor).lineHeight);
+      jsonEditor.scrollTop = (lineNumber - 1) * lineHeight;
+      highlightTrackNameInEditor(trackIndex);
+    }
   }
 }
 

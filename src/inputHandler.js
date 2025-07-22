@@ -1,11 +1,13 @@
 import { validate, formatErrorForDisplay } from './validationService.js';
 import { update } from './state.js';
 import { defaultMusicData } from './schemas.js';
+import { selectedTracks } from './visualizer.js';
 
 let debounceTimer = null;
 let jsonEditor = null;
 let errorPanel = null;
 let lineNumbers = null;
+let fullMusicData = null;
 
 export function initialize() {
   jsonEditor = document.getElementById('json-editor');
@@ -13,6 +15,7 @@ export function initialize() {
   lineNumbers = document.getElementById('line-numbers');
 
   jsonEditor.value = JSON.stringify(defaultMusicData, null, 2);
+  fullMusicData = defaultMusicData;
 
   updateLineNumbers();
   handleInput();
@@ -63,7 +66,39 @@ function handleInput() {
     successDiv.textContent = 'Valid JSON - Music updated';
     errorPanel.appendChild(successDiv);
 
-    update(result.data);
+    // If tracks are selected, merge the edited filtered data back into fullMusicData
+    if (selectedTracks.size > 0 && fullMusicData) {
+      const editedData = result.data;
+      
+      // Create a map of selected track indices to their new data
+      const selectedTrackIndices = Array.from(selectedTracks).sort();
+      const trackUpdates = new Map();
+      
+      editedData.tracks.forEach((track, i) => {
+        if (i < selectedTrackIndices.length) {
+          trackUpdates.set(selectedTrackIndices[i], track);
+        }
+      });
+      
+      // Update the full music data with changes
+      fullMusicData = {
+        ...fullMusicData,
+        title: editedData.title,
+        tempo: editedData.tempo,
+        tracks: fullMusicData.tracks.map((track, index) => {
+          return trackUpdates.has(index) ? trackUpdates.get(index) : track;
+        })
+      };
+      
+      // Update the state with merged data
+      update(fullMusicData);
+    } else {
+      // Store the full music data
+      fullMusicData = result.data;
+      
+      // Update the state with full data (not filtered)
+      update(result.data);
+    }
   } else {
     errorPanel.innerHTML = '';
     const errorElements = formatErrorForDisplay(result.error);
@@ -79,4 +114,26 @@ function updateLineNumbers() {
     numbers += i + '\n';
   }
   lineNumbers.textContent = numbers;
+}
+
+export function updateJSONDisplay() {
+  if (!jsonEditor || !fullMusicData) return;
+
+  let displayData;
+  
+  if (selectedTracks.size > 0) {
+    // Create filtered data with only selected tracks
+    displayData = {
+      title: fullMusicData.title,
+      tempo: fullMusicData.tempo,
+      tracks: fullMusicData.tracks.filter((track, index) => selectedTracks.has(index))
+    };
+  } else {
+    // Show full data when no tracks are selected
+    displayData = fullMusicData;
+  }
+
+  // Update editor without triggering validation
+  jsonEditor.value = JSON.stringify(displayData, null, 2);
+  updateLineNumbers();
 }

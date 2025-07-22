@@ -1,5 +1,5 @@
-import { initialize as initializeInput } from './inputHandler.js';
-import { initialize as initializeVisualizer, update as updateVisualizer } from './visualizer.js';
+import { initialize as initializeInput, updateJSONDisplay } from './inputHandler.js';
+import { initialize as initializeVisualizer, update as updateVisualizer, selectedTracks } from './visualizer.js';
 import { init as initAudioVisualizer } from './audioVisualizer.js';
 import { subscribe } from './state.js';
 import { update as updateAudioEngine, play, stop } from './audioEngine.js';
@@ -136,6 +136,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const parsed = JSON.parse(content);
         // Format with 2-space indentation
         const formatted = JSON.stringify(parsed, null, 2);
+        
+        // Clear any track selections
+        selectedTracks.clear();
+        document.querySelectorAll('.track-selected').forEach(el => {
+          el.classList.remove('track-selected');
+        });
         
         // Set the content
         jsonEditor.value = formatted;

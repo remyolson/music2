@@ -80,6 +80,46 @@ export const instruments = {
     name: 'Pad Synth',
     description: 'Ambient synthesizer pad',
     acceptsNotes: 'pitch'
+  },
+  celesta: {
+    name: 'Celesta',
+    description: 'Bell-like keyboard instrument',
+    acceptsNotes: 'pitch'
+  },
+  vibraphone: {
+    name: 'Vibraphone',
+    description: 'Metallic bars with motor-driven vibrato',
+    acceptsNotes: 'pitch'
+  },
+  xylophone: {
+    name: 'Xylophone',
+    description: 'Wooden bars with bright attack',
+    acceptsNotes: 'pitch'
+  },
+  clarinet: {
+    name: 'Clarinet',
+    description: 'Warm woodwind instrument',
+    acceptsNotes: 'pitch'
+  },
+  tuba: {
+    name: 'Tuba',
+    description: 'Deep brass bass instrument',
+    acceptsNotes: 'pitch'
+  },
+  choir: {
+    name: 'Choir',
+    description: 'Vocal ensemble sound',
+    acceptsNotes: 'pitch'
+  },
+  banjo: {
+    name: 'Banjo',
+    description: 'Plucked string instrument with twangy sound',
+    acceptsNotes: 'pitch'
+  },
+  electric_piano: {
+    name: 'Electric Piano',
+    description: 'Rhodes-style electric piano',
+    acceptsNotes: 'pitch'
   }
 };
 
