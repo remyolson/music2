@@ -5,6 +5,7 @@ describe('validationService', () => {
   describe('validate', () => {
     it('should validate valid music data', () => {
       const validData = JSON.stringify({
+        title: 'Test Song',
         tempo: 120,
         key: 'C',
         scale: 'major',
@@ -13,7 +14,7 @@ describe('validationService', () => {
             name: 'Lead',
             instrument: 'synth_lead',
             notes: [
-              { time: 0, value: 60, duration: 1 }
+              { time: 0, value: 'C4', duration: 1 }
             ]
           }
         ]
@@ -31,7 +32,7 @@ describe('validationService', () => {
       
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
-      expect(result.error.message).toContain('Invalid JSON');
+      expect(result.error).toContain('JSON Syntax Error');
     });
 
     it('should validate schema constraints', () => {
@@ -55,37 +56,31 @@ describe('validationService', () => {
   });
 
   describe('formatErrorForDisplay', () => {
-    it('should format JSON parse errors', () => {
-      const error = {
-        message: 'Invalid JSON',
-        line: 5,
-        column: 10
-      };
+    it('should format error strings into DOM elements', () => {
+      const error = 'Error line 1\nError line 2\nError line 3';
 
       const formatted = formatErrorForDisplay(error);
-      expect(formatted).toContain('Invalid JSON');
-      expect(formatted).toContain('Line 5');
-      expect(formatted).toContain('Column 10');
+      expect(formatted).toHaveLength(3);
+      expect(formatted[0].textContent).toBe('Error line 1');
+      expect(formatted[1].textContent).toBe('Error line 2');
+      expect(formatted[2].textContent).toBe('Error line 3');
+      expect(formatted[0].className).toBe('error-message');
     });
 
-    it('should format validation errors with path', () => {
-      const error = {
-        message: 'Invalid value',
-        path: ['tracks', 0, 'notes', 1, 'value']
-      };
+    it('should handle single line errors', () => {
+      const error = 'Single error message';
 
       const formatted = formatErrorForDisplay(error);
-      expect(formatted).toContain('tracks[0].notes[1].value');
-      expect(formatted).toContain('Invalid value');
+      expect(formatted).toHaveLength(1);
+      expect(formatted[0].textContent).toBe('Single error message');
     });
 
-    it('should handle errors without specific formatting', () => {
-      const error = {
-        message: 'Generic error'
-      };
+    it('should handle empty strings', () => {
+      const error = '';
 
       const formatted = formatErrorForDisplay(error);
-      expect(formatted).toBe('Generic error');
+      expect(formatted).toHaveLength(1);
+      expect(formatted[0].textContent).toBe('');
     });
   });
 });
