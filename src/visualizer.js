@@ -79,6 +79,9 @@ export function update(musicData) {
   // Set explicit pixel width so container can scroll horizontally
   svg.setAttribute('width', `${svgWidth}px`);
 
+  // Add click-to-seek listener
+  svg.addEventListener('click', handlePianoRollClick);
+
   drawGrid(svgWidth, totalBeats, pixelsPerBeat);
 
   drawTracks(musicData, pixelsPerBeat);
@@ -400,5 +403,49 @@ function highlightTrackNameInEditor(trackIndex) {
       }
     }
     pos += line.length + 1;
+  }
+}
+
+function handlePianoRollClick(event) {
+  // Check if click is on a track element (note, track background, etc)
+  const clickedElement = event.target;
+  const isTrackElement = clickedElement.classList.contains('note') || 
+                        clickedElement.classList.contains('track-bg') ||
+                        clickedElement.closest('.track');
+  
+  // If clicked on a track element, let the track handlers handle it
+  if (isTrackElement) {
+    return;
+  }
+  
+  // Get click position relative to SVG
+  const pt = svg.createSVGPoint();
+  pt.x = event.clientX;
+  pt.y = event.clientY;
+  
+  // Transform to SVG coordinate space
+  const svgPt = pt.matrixTransform(svg.getScreenCTM().inverse());
+  
+  // Convert X position to beats
+  const clickedX = svgPt.x;
+  const pixelsPerBeat = BASE_PIXELS_PER_BEAT * zoomLevel;
+  const clickedBeat = Math.max(0, (clickedX - MARGIN) / pixelsPerBeat);
+  
+  // Get transport and calculate time in seconds
+  const transport = getTransport();
+  const bpm = transport.bpm.value;
+  const secondsPerBeat = 60 / bpm;
+  const clickedTime = clickedBeat * secondsPerBeat;
+  
+  // Get loop end to constrain seek position
+  const loopEnd = getLoopEnd(currentData);
+  const loopEndTime = loopEnd * secondsPerBeat;
+  
+  // Set transport position (constrain to loop bounds if looping)
+  if (loopEnd > 0 && clickedTime >= loopEndTime) {
+    // If clicking beyond loop end, wrap to start
+    transport.seconds = clickedTime % loopEndTime;
+  } else {
+    transport.seconds = clickedTime;
   }
 }
