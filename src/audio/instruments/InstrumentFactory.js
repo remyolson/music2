@@ -225,7 +225,7 @@ export async function createInstrument(type, settings = {}) {
     }
 
     case 'electric_guitar':
-      return new Tone.MonoSynth({
+      return new Tone.PolySynth(Tone.Synth, {
         oscillator: { type: 'sawtooth' },
         envelope: {
           attack: envelope.attack ?? transitionSettings.attack ?? 0.002,
@@ -240,8 +240,7 @@ export async function createInstrument(type, settings = {}) {
           release: 0.2,
           baseFrequency: 400,
           octaves: 2.5
-        },
-        portamento: portamentoTime
+        }
       });
 
     case 'organ':
