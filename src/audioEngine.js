@@ -18,19 +18,17 @@ import {
   stopLiveInputRecording as stopLiveInputRecordingModule,
   getLiveInputStatus as getLiveInputStatusModule
 } from './audio/live/LiveInput.js';
+import { 
+  getMasterBus,
+  applyMasterEffectPreset as applyMasterEffectPresetModule,
+  getMasterEffectChain
+} from './audio/core/MasterBus.js';
 
 const instruments = new Map();
 let parts = [];
 let isPlaying = false;
 const effects = new Map();
 let harmonyCallback = null;
-
-// Master bus for global effects
-let masterBus = null;
-let masterEffectChain = [];
-let masterLimiter = null;
-let masterCompressor = null;
-let masterHighpass = null;
 
 // Track temporary effects that need cleanup
 const temporaryEffects = new Map();
@@ -169,7 +167,7 @@ export async function update(musicData) {
           }
 
           // Update health monitor
-          audioHealthMonitor.updateEffectCount(effects.size + masterEffectChain.length);
+          audioHealthMonitor.updateEffectCount(effects.size + getMasterEffectChain().length);
 
           // Update harmonizer settings for this note
           harmonizer.setIntervals(note.harmonize);
@@ -215,7 +213,7 @@ export async function update(musicData) {
             newEffect.connect(getMasterBus());
 
             // Update health monitor
-            audioHealthMonitor.updateEffectCount(effects.size + masterEffectChain.length);
+            audioHealthMonitor.updateEffectCount(effects.size + getMasterEffectChain().length);
           }
         }
 
@@ -328,7 +326,7 @@ export async function play() {
   audioHealthMonitor.startMonitoring();
 
   // Update effect count
-  const totalEffects = effects.size + masterEffectChain.length + temporaryEffects.size;
+  const totalEffects = effects.size + getMasterEffectChain().length + temporaryEffects.size;
   audioHealthMonitor.updateEffectCount(totalEffects);
 
   parts.forEach(part => part.start(0));
@@ -546,128 +544,9 @@ export function setHarmonyCallback(callback) {
   harmonyCallback = callback;
 }
 
-// Initialize master bus
-function initializeMasterBus() {
-  if (!masterBus) {
-    masterBus = new Tone.Gain(MASTER_BUS_CONFIG.gain);
-
-    // Create a compressor for dynamic control
-    if (!masterCompressor) {
-      masterCompressor = new Tone.Compressor({
-        threshold: -12,
-        ratio: 4,
-        attack: 0.003,
-        release: 0.25
-      });
-    }
-
-    // Create a highpass filter for DC blocking (20Hz cutoff)
-    if (!masterHighpass) {
-      masterHighpass = new Tone.Filter({
-        type: 'highpass',
-        frequency: 20,
-        rolloff: -24
-      });
-    }
-
-    // Create a limiter to prevent clipping
-    if (!masterLimiter) {
-      masterLimiter = new Tone.Limiter(MASTER_BUS_CONFIG.limiterThreshold);
-    }
-
-    // Connect master bus through processing chain to destination
-    if (masterEffectChain.length > 0) {
-      masterBus.chain(...masterEffectChain, masterCompressor, masterHighpass, masterLimiter, Tone.Destination);
-    } else {
-      masterBus.chain(masterCompressor, masterHighpass, masterLimiter, Tone.Destination);
-    }
-
-    // Initialize and start health monitoring
-    audioHealthMonitor.initialize();
-    audioHealthMonitor.startMonitoring();
-  }
-  return masterBus;
-}
 
 // Apply master effect preset
 export function applyMasterEffectPreset(presetData) {
-  // Initialize master bus if needed
-  initializeMasterBus();
-
-  // Clean up old effects
-  masterEffectChain.forEach(effect => {
-    effect.disconnect();
-    effect.dispose();
-  });
-  masterEffectChain = [];
-
-  // If no preset data or effects, just connect through processing chain
-  if (!presetData || !presetData.effects || presetData.effects.length === 0) {
-    masterBus.disconnect();
-    masterBus.chain(masterCompressor, masterHighpass, masterLimiter, Tone.Destination);
-    return;
-  }
-
-  // Create new effects chain
-  presetData.effects.forEach(effectConfig => {
-    const effectType = effectConfig.type;
-    const params = effectConfig.params || {};
-
-    if (availableEffects[effectType]) {
-      const effect = availableEffects[effectType]();
-
-      // Apply parameters
-      if (effectType === 'harmonizer') {
-        // Special handling for harmonizer
-        if (params.intervals && effect.setIntervals) {
-          effect.setIntervals(params.intervals);
-        }
-        if (params.mix !== undefined && effect.setMix) {
-          effect.setMix(params.mix);
-        }
-      } else if (effectType === 'freezeReverb') {
-        // Special handling for freezeReverb parameters
-        if (params.decay && effect.children && effect.children[0]) {
-          effect.children[0].roomSize.value = Math.min(params.decay / 100, 0.99);
-        }
-        if (params.wet !== undefined) {
-          effect.wet.value = params.wet;
-        }
-      } else if (effect.set) {
-        // For standard Tone.js effects
-        try {
-          effect.set(params);
-        } catch {
-          // Fallback to manual parameter setting
-          Object.keys(params).forEach(param => {
-            if (effect[param] && effect[param].value !== undefined) {
-              effect[param].value = params[param];
-            }
-          });
-        }
-      } else {
-        // Manual parameter setting
-        Object.keys(params).forEach(param => {
-          if (effect[param] && effect[param].value !== undefined) {
-            effect[param].value = params[param];
-          }
-        });
-      }
-
-      masterEffectChain.push(effect);
-    }
-  });
-
-  // Reconnect with new effect chain through processing chain
-  masterBus.disconnect();
-  if (masterEffectChain.length > 0) {
-    masterBus.chain(...masterEffectChain, masterCompressor, masterHighpass, masterLimiter, Tone.Destination);
-  } else {
-    masterBus.chain(masterCompressor, masterHighpass, masterLimiter, Tone.Destination);
-  }
+  applyMasterEffectPresetModule(presetData);
 }
 
-// Get master bus (creates it if it doesn't exist)
-function getMasterBus() {
-  return initializeMasterBus();
-}
