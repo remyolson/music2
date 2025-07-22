@@ -205,6 +205,21 @@ const Tone = {
     loopEnd: 0,
     trackIndex: undefined
   })),
+  Player: vi.fn(() => ({
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    dispose: vi.fn(),
+    start: vi.fn(),
+    stop: vi.fn(),
+    load: vi.fn().mockResolvedValue(undefined)
+  })),
+  PitchShift: vi.fn(() => ({
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    dispose: vi.fn(),
+    pitch: 0,
+    wet: { value: 1 }
+  })),
   Frequency: vi.fn((value, type) => ({
     toFrequency: () => 440 // Default A4
   }))

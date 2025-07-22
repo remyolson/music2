@@ -10,6 +10,12 @@ import {
 } from '../constants/index.js';
 import { TRANSITION_PRESETS } from '../constants/limits.js';
 import { DisposalRegistry } from '../../utils/DisposalRegistry.js';
+import { availableEffects } from '../effects/EffectFactory.js';
+import { 
+  createInstrumentLazy, 
+  preloadCommonInstruments,
+  getCacheStats 
+} from './LazyInstrumentLoader.js';
 
 /**
  * Creates an instrument based on type and settings
@@ -739,4 +745,94 @@ export function getDrumConstants() {
     pitches: DRUM_PITCHES,
     durations: DRUM_DURATIONS
   };
+}
+
+/**
+ * Creates an instrument with lazy loading support
+ * @param {string} type - Instrument type
+ * @param {Object} settings - Instrument settings
+ * @returns {Promise<Tone.Instrument>} The created instrument
+ */
+export async function createInstrumentAsync(type, settings = {}) {
+  return createInstrumentLazy(type, settings);
+}
+
+/**
+ * Creates an instrument with effects using lazy loading
+ * @param {Object} track - Track configuration
+ * @param {Function} getMasterBus - Function to get the master bus
+ * @returns {Promise<Object>} Instrument and effect chain
+ */
+export async function createInstrumentWithEffectsAsync(track, getMasterBus) {
+  // Create instrument with lazy loading
+  const instrument = await createInstrumentAsync(track.instrument, track.settings);
+  
+  // Rest of the logic is the same as createInstrumentWithEffects
+  const effectChain = [];
+  
+  // Apply gain factor
+  if (instrument.volume) {
+    const gainAdjustment = INSTRUMENT_GAIN_FACTOR[track.instrument];
+    if (gainAdjustment !== undefined) {
+      instrument.volume.value = gainAdjustment;
+    }
+  }
+  
+  // Create effect chain
+  if (track.settings?.globalEffects) {
+    track.settings.globalEffects.forEach(effectConfig => {
+      if (availableEffects[effectConfig.type]) {
+        const effect = availableEffects[effectConfig.type]();
+        if (effect.wet && effectConfig.level !== undefined) {
+          effect.wet.value = effectConfig.level;
+        }
+        effectChain.push(effect);
+      }
+    });
+  }
+  
+  // Add track-specific effects
+  const trackEffects = track.effects || [];
+  trackEffects.forEach(effectName => {
+    const isGlobal = track.settings?.globalEffects?.some(e => e.type === effectName);
+    if (!isGlobal) {
+      const effect = availableEffects[effectName]();
+      effectChain.push(effect);
+    }
+  });
+  
+  // Connect routing
+  if (track.instrument === 'drums_kit' || track.instrument === 'drums_electronic') {
+    if (effectChain.length > 0) {
+      instrument.kick.chain(...effectChain, getMasterBus());
+      instrument.snare.chain(...effectChain, getMasterBus());
+    } else {
+      instrument.kick.connect(getMasterBus());
+      instrument.snare.connect(getMasterBus());
+    }
+  } else {
+    if (effectChain.length > 0) {
+      instrument.chain(...effectChain, getMasterBus());
+    } else {
+      instrument.connect(getMasterBus());
+    }
+  }
+  
+  return { instrument, effectChain };
+}
+
+/**
+ * Preload commonly used instruments for better performance
+ * @returns {Promise<void>}
+ */
+export async function preloadInstruments() {
+  return preloadCommonInstruments();
+}
+
+/**
+ * Get instrument loader cache statistics
+ * @returns {Object} Cache statistics
+ */
+export function getInstrumentCacheStats() {
+  return getCacheStats();
 }
