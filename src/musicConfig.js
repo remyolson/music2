@@ -26,9 +26,60 @@ export const instruments = {
   },
   drums_kit: {
     name: 'Drum Kit',
-    description: 'Standard drum kit',
+    description: 'Standard acoustic drum kit',
     acceptsNotes: 'drums',
     validValues: ['kick', 'snare']
+  },
+  electric_guitar: {
+    name: 'Electric Guitar',
+    description: 'Electric guitar with amp simulation',
+    acceptsNotes: 'pitch'
+  },
+  organ: {
+    name: 'Organ',
+    description: 'Hammond-style organ with rotary speaker',
+    acceptsNotes: 'pitch'
+  },
+  flute: {
+    name: 'Flute',
+    description: 'Soft flute sound',
+    acceptsNotes: 'pitch'
+  },
+  harp: {
+    name: 'Harp',
+    description: 'Plucked harp with long decay',
+    acceptsNotes: 'pitch'
+  },
+  drums_electronic: {
+    name: 'Electronic Drums',
+    description: 'Electronic/808-style drum kit',
+    acceptsNotes: 'drums',
+    validValues: ['kick', 'snare']
+  },
+  marimba: {
+    name: 'Marimba',
+    description: 'Wooden xylophone with soft mallets',
+    acceptsNotes: 'pitch'
+  },
+  trumpet: {
+    name: 'Trumpet',
+    description: 'Bright brass trumpet',
+    acceptsNotes: 'pitch'
+  },
+  violin: {
+    name: 'Violin',
+    description: 'Solo violin with vibrato',
+    acceptsNotes: 'pitch'
+  },
+  saxophone: {
+    name: 'Saxophone',
+    description: 'Smooth tenor saxophone',
+    acceptsNotes: 'pitch'
+  },
+  pad_synth: {
+    name: 'Pad Synth',
+    description: 'Ambient synthesizer pad',
+    acceptsNotes: 'pitch'
   }
 };
 
@@ -52,6 +103,26 @@ export const effects = {
   phaser: {
     name: 'Phaser',
     description: 'Sweeping filter effect'
+  },
+  filter: {
+    name: 'Filter',
+    description: 'Auto-wah filter sweep'
+  },
+  echo: {
+    name: 'Echo',
+    description: 'Feedback delay with character'
+  },
+  tremolo: {
+    name: 'Tremolo',
+    description: 'Volume modulation effect'
+  },
+  bitcrush: {
+    name: 'Bitcrush',
+    description: 'Lo-fi digital distortion'
+  },
+  wah: {
+    name: 'Wah',
+    description: 'Auto-wah envelope filter'
   }
 };
 
@@ -82,8 +153,10 @@ Schema (all fields required unless marked optional):
         {
           "time": number       // Beat position (e.g., 0, 0.5, 3.25)
           "duration": number   // Length in beats (e.g., 0.5 = eighth note at 120 BPM)
-          "value": string|number // Pitch notation (C4, F#5) for melodic instruments
-                                // "kick" or "snare" for drums_kit
+          "value": string|number|array // Single note: "C4", "F#5" for melodic instruments
+                                      // Chord array: ["C4", "E4", "G4"] for multiple simultaneous notes
+                                      // Chord shortcut: "Cmaj4", "Dmin5", "G73" (chord type + octave)
+                                      // Drums: "kick" or "snare" for drums_kit
           "volume": number     // Volume level 0-1 (default: 0.7)
           "effect": string     // Optional: effect name (see below)
           "effectLevel": number // Optional: effect intensity 0-1
@@ -117,8 +190,12 @@ Available Effects (optional for any note):
 ${effectList}
 
 Instrument Contract:
-• Melodic instruments (synth_lead, synth_bass, piano, strings, brass) → value must be valid scientific pitch notation (A0–C8, with optional # for sharp).
-• drums_kit → value must be exactly "kick" or "snare".
+• Melodic instruments (synth_lead, synth_bass, piano, strings, brass, electric_guitar, organ, flute, harp, marimba, trumpet, violin, saxophone, pad_synth) → value can be:
+  - Single note: valid scientific pitch notation (A0–C8, with optional # for sharp) like "C4", "F#5"
+  - Chord array: array of 2-6 notes like ["C4", "E4", "G4"] for simultaneous notes
+  - Chord shortcut: "Cmaj4", "Dmin5", "G73", "Fmaj74" (root + type + octave)
+    Available chord types: maj, min, dim, 7, maj7, min7
+• drums_kit, drums_electronic → value must be exactly "kick" or "snare".
 
 Formatting Rules:
 1. Use double quotes on all keys & string values (valid JSON).
@@ -130,69 +207,95 @@ Formatting Rules:
 
 Instrument-Level Settings:
 • globalEffects: Apply effects to all notes in a track (more efficient than per-note)
-• noteTransition: Control how notes connect ("smooth" for gradual, "legato" for connected, "staccato" for short/separated)
+• noteTransition: Control how notes connect
+  - "smooth": Gradual transitions with longer release (best for chords/pads)
+  - "legato": Connected notes with portamento (good for melodies)
+  - "staccato": Short, separated notes
+  - "normal": Balanced attack/release (default)
 • portamento: Time for pitch slides between notes (0-1, where 0.1 = subtle glide)
 • envelope: Fine-tune attack/decay/sustain/release for custom instrument character
+  - attack: 0-2 seconds (longer = softer start)
+  - release: 0-5 seconds (longer = natural fade)
 
-Example (with new features):
+Chord Notation:
+• Use chord arrays for rich harmonies: ["C4", "E4", "G4", "C5"]
+• Use chord shortcuts for common chords: "Cmaj4" (C major in octave 4)
+• Combine with smooth transitions and reverb for lush sound
+• Piano, strings, organ, and pad_synth work best with chords
+
+Example (with chords and smooth sound):
 {
-  "title": "Enhanced Demo",
-  "tempo": 120,
+  "title": "Smooth Chord Demo",
+  "tempo": 100,
   "tracks": [
     {
-      "name": "Bass",
-      "instrument": "synth_bass",
+      "name": "Piano",
+      "instrument": "piano",
       "notes": [
-        { "time": 0, "duration": 0.5, "value": "E2", "volume": 0.8 },
-        { "time": 0.5, "duration": 0.5, "value": "E2", "volume": 0.6 },
-        { "time": 1, "duration": 0.5, "value": "G2", "volume": 0.8 },
-        { "time": 1.5, "duration": 0.5, "value": "A2", "volume": 0.7 }
+        { "time": 0, "duration": 2, "value": ["C4", "E4", "G4", "C5"], "volume": 0.5 },
+        { "time": 2, "duration": 2, "value": ["A3", "C4", "E4", "A4"], "volume": 0.5 },
+        { "time": 4, "duration": 2, "value": "Fmaj4", "volume": 0.5 },
+        { "time": 6, "duration": 2, "value": "G74", "volume": 0.6 }
       ],
       "settings": {
-        "globalEffects": [{ "type": "distortion", "level": 0.3 }],
-        "noteTransition": "staccato"
+        "globalEffects": [{ "type": "reverb", "level": 0.6 }],
+        "noteTransition": "smooth",
+        "envelope": { "attack": 0.02, "release": 1.5 }
+      }
+    },
+    {
+      "name": "Pad",
+      "instrument": "pad_synth",
+      "notes": [
+        { "time": 0, "duration": 8, "value": ["C3", "G3", "C4"], "volume": 0.3 }
+      ],
+      "settings": {
+        "globalEffects": [
+          { "type": "reverb", "level": 0.9 },
+          { "type": "chorus", "level": 0.4 }
+        ],
+        "noteTransition": "smooth",
+        "envelope": { "attack": 1.0, "release": 3.0 }
       }
     },
     {
       "name": "Lead",
       "instrument": "synth_lead",
       "notes": [
-        { "time": 0, "duration": 1, "value": "E4", "volume": 0.5 },
-        { "time": 1, "duration": 1, "value": "G4", "volume": 0.5 },
-        { "time": 2, "duration": 1, "value": "B4", "volume": 0.5 }
+        { "time": 0, "duration": 1, "value": "E5", "volume": 0.4 },
+        { "time": 1, "duration": 1, "value": "D5", "volume": 0.4 },
+        { "time": 2, "duration": 2, "value": "C5", "volume": 0.5 }
       ],
       "settings": {
         "globalEffects": [
-          { "type": "reverb", "level": 0.6 },
-          { "type": "delay", "level": 0.3 }
+          { "type": "delay", "level": 0.3 },
+          { "type": "reverb", "level": 0.5 }
         ],
-        "noteTransition": "smooth",
-        "portamento": 0.1
+        "noteTransition": "legato",
+        "portamento": 0.08
       }
     },
     {
-      "name": "Strings",
-      "instrument": "strings",
+      "name": "Bass",
+      "instrument": "synth_bass",
       "notes": [
-        { "time": 0, "duration": 4, "value": "C3", "volume": 0.4 },
-        { "time": 0, "duration": 4, "value": "E3", "volume": 0.4 },
-        { "time": 0, "duration": 4, "value": "G3", "volume": 0.4 }
+        { "time": 0, "duration": 2, "value": "C2", "volume": 0.7 },
+        { "time": 2, "duration": 2, "value": "A1", "volume": 0.7 },
+        { "time": 4, "duration": 2, "value": "F1", "volume": 0.7 },
+        { "time": 6, "duration": 2, "value": "G1", "volume": 0.7 }
       ],
       "settings": {
-        "globalEffects": [{ "type": "reverb", "level": 0.8 }],
-        "noteTransition": "legato",
-        "envelope": {
-          "attack": 0.5,
-          "release": 2.0
-        }
+        "globalEffects": [{ "type": "distortion", "level": 0.2 }],
+        "noteTransition": "smooth"
       }
     },
     {
       "name": "Drums",
       "instrument": "drums_kit",
       "notes": [
-        { "time": 0, "duration": 0.5, "value": "kick", "volume": 1.0, "repeat": 2 },
-        { "time": 0.5, "duration": 0.5, "value": "snare", "volume": 0.8, "repeat": 2 }
+        { "time": 0, "duration": 0.5, "value": "kick", "volume": 0.8, "repeat": 16 },
+        { "time": 1, "duration": 0.1, "value": "snare", "volume": 0.5 },
+        { "time": 3, "duration": 0.1, "value": "snare", "volume": 0.5 }
       ]
     }
   ]

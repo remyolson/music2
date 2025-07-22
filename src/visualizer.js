@@ -5,7 +5,7 @@ let svg = null;
 let playhead = null;
 let animationId = null;
 let currentData = null;
-let zoomLevel = 5; // Default zoom most zoomed in per new scale (1-5)
+let zoomLevel = 2; // Default zoom level (1-5, was 5)
 let zoomSlider = null;
 let trackCountElement = null;
 let jsonEditor = null;
@@ -136,15 +136,6 @@ function drawTracks(musicData, pixelsPerBeat) {
 
     trackGroup.appendChild(trackBg);
 
-    const trackLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    trackLabel.setAttribute('x', 5);
-    trackLabel.setAttribute('y', yOffset + 15);
-    trackLabel.setAttribute('fill', '#a0a0a0');
-    trackLabel.setAttribute('font-size', '12');
-    trackLabel.textContent = track.name;
-    trackLabel.style.pointerEvents = 'none';
-    trackGroup.appendChild(trackLabel);
-
     const notesForTrack = expandNotesWithRepeat(track.notes);
     notesForTrack.forEach((note, noteIndex) => {
       const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -190,19 +181,22 @@ function drawTracks(musicData, pixelsPerBeat) {
       noteLabel.setAttribute('font-weight', 'bold');
       noteLabel.style.pointerEvents = 'none';
 
-      if (track.instrument === 'synth_lead') {
-        const pitchNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-        const midiNote = note.value;
-        const octave = Math.floor(midiNote / 12);
-        const noteName = pitchNames[midiNote % 12];
-        noteLabel.textContent = `${noteName}${octave}`;
-      } else {
-        noteLabel.textContent = note.value;
-      }
+      // Always display the value field content
+      noteLabel.textContent = note.value;
 
       trackGroup.appendChild(rect);
       trackGroup.appendChild(noteLabel);
     });
+
+    // Add track label LAST so it appears on top of everything
+    const trackLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    trackLabel.setAttribute('x', 5);
+    trackLabel.setAttribute('y', yOffset + 15);
+    trackLabel.setAttribute('fill', '#a0a0a0');
+    trackLabel.setAttribute('font-size', '12');
+    trackLabel.textContent = track.name;
+    trackLabel.style.pointerEvents = 'none';
+    trackGroup.appendChild(trackLabel);
 
     tracksGroup.appendChild(trackGroup);
     yOffset += NOTE_HEIGHT + 30;
@@ -359,52 +353,49 @@ function highlightTrackInEditor(trackIndex) {
 
   let currentTrackIndex = -1;
   let insideTracks = false;
-  let trackStartLine = -1;
-  let trackEndLine = -1;
-  let braceCount = 0;
+  let nameLineNumber = -1;
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+    const line = lines[i];
+    const trimmedLine = line.trim();
 
-    if (line.includes('"tracks"') && line.includes('[')) {
+    if (trimmedLine.includes('"tracks"') && trimmedLine.includes('[')) {
       insideTracks = true;
       continue;
     }
 
     if (insideTracks) {
-      if (line === '{' && braceCount === 0) {
+      if (trimmedLine === '{') {
         currentTrackIndex++;
-        if (currentTrackIndex === trackIndex) {
-          trackStartLine = i;
-        }
       }
 
-      if (trackStartLine !== -1) {
-        if (line.includes('{')) braceCount++;
-        if (line.includes('}')) braceCount--;
-
-        if (braceCount === 0 && line.includes('}')) {
-          trackEndLine = i;
-          break;
-        }
+      // Look for the "name" field of the current track
+      if (currentTrackIndex === trackIndex && line.includes('"name"')) {
+        nameLineNumber = i;
+        break;
       }
     }
   }
 
-  if (trackStartLine !== -1 && trackEndLine !== -1) {
-    // Calculate selection positions
-    let startPos = 0;
-    for (let i = 0; i < trackStartLine; i++) {
-      startPos += lines[i].length + 1; // +1 for newline
+  if (nameLineNumber !== -1) {
+    // Calculate the exact position of the name field value
+    const line = lines[nameLineNumber];
+    const nameMatch = line.match(/"name"\s*:\s*"([^"]*)"/); 
+    
+    if (nameMatch) {
+      // Calculate position to the start of the line
+      let startPos = 0;
+      for (let i = 0; i < nameLineNumber; i++) {
+        startPos += lines[i].length + 1; // +1 for newline
+      }
+      
+      // Find the position of the name value within the line
+      const valueStartIndex = line.indexOf(nameMatch[1]);
+      const valueEndIndex = valueStartIndex + nameMatch[1].length;
+      
+      // Set selection to just the name value
+      jsonEditor.focus();
+      jsonEditor.setSelectionRange(startPos + valueStartIndex, startPos + valueEndIndex);
     }
-
-    let endPos = startPos;
-    for (let i = trackStartLine; i <= trackEndLine; i++) {
-      endPos += lines[i].length + 1;
-    }
-
-    // Set selection in the editor
-    jsonEditor.focus();
-    jsonEditor.setSelectionRange(startPos, endPos - 1);
   }
 }

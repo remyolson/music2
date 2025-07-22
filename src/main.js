@@ -27,6 +27,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const stopButton = document.getElementById('stop-button');
   const copyButton = document.getElementById('copy-json');
   const copyAiButton = document.getElementById('copy-ai');
+  const saveButton = document.getElementById('save-json');
+  const loadButton = document.getElementById('load-json');
+  const fileInput = document.getElementById('file-input');
 
   playButton.addEventListener('click', async () => {
     await play();
@@ -67,6 +70,115 @@ document.addEventListener('DOMContentLoaded', () => {
     }).catch(err => {
       console.error('Failed to copy: ', err);
     });
+  });
+
+  saveButton.addEventListener('click', () => {
+    const jsonEditor = document.getElementById('json-editor');
+    const jsonText = jsonEditor.value;
+    
+    try {
+      // Parse JSON to get the title
+      const musicData = JSON.parse(jsonText);
+      const title = musicData.title || 'untitled';
+      
+      // Sanitize filename - remove special characters and limit length
+      const sanitizedTitle = title
+        .replace(/[^a-z0-9\s-]/gi, '') // Remove special chars
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .toLowerCase()
+        .substring(0, 50); // Limit length
+      
+      const filename = `${sanitizedTitle}.json`;
+      
+      // Create blob and download link
+      const blob = new Blob([jsonText], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      
+      // Clean up
+      URL.revokeObjectURL(url);
+      
+      // Visual feedback
+      const originalText = saveButton.textContent;
+      saveButton.textContent = 'Saved!';
+      setTimeout(() => {
+        saveButton.textContent = originalText;
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to save:', err);
+      const originalText = saveButton.textContent;
+      saveButton.textContent = 'Error!';
+      setTimeout(() => {
+        saveButton.textContent = originalText;
+      }, 2000);
+    }
+  });
+
+  loadButton.addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      const content = e.target.result;
+      const jsonEditor = document.getElementById('json-editor');
+      
+      try {
+        // Validate it's proper JSON
+        const parsed = JSON.parse(content);
+        // Format with 2-space indentation
+        const formatted = JSON.stringify(parsed, null, 2);
+        
+        // Set the content
+        jsonEditor.value = formatted;
+        
+        // Trigger input event to validate and update
+        const inputEvent = new Event('input', { bubbles: true });
+        jsonEditor.dispatchEvent(inputEvent);
+        
+        // Visual feedback
+        const originalText = loadButton.textContent;
+        loadButton.textContent = 'Loaded!';
+        setTimeout(() => {
+          loadButton.textContent = originalText;
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to load file:', err);
+        
+        // Show error in error panel
+        const errorPanel = document.getElementById('error-panel');
+        errorPanel.innerHTML = `<div class="error-message">Failed to load file: ${err.message}</div>`;
+        
+        // Visual feedback
+        const originalText = loadButton.textContent;
+        loadButton.textContent = 'Error!';
+        setTimeout(() => {
+          loadButton.textContent = originalText;
+        }, 2000);
+      }
+    };
+    
+    reader.onerror = () => {
+      console.error('Failed to read file');
+      const originalText = loadButton.textContent;
+      loadButton.textContent = 'Error!';
+      setTimeout(() => {
+        loadButton.textContent = originalText;
+      }, 2000);
+    };
+    
+    reader.readAsText(file);
+    
+    // Reset the input so the same file can be loaded again
+    event.target.value = '';
   });
 
   console.log('JSON Music Codec - Ready!');

@@ -23,11 +23,20 @@ function expandNotesWithRepeat(notes) {
 }
 
 const availableEffects = {
-  reverb: () => new Tone.Reverb({ decay: 2.5, wet: 0.5 }),
+  reverb: () => new Tone.Reverb({ 
+    decay: 4.0,  // Increased for more natural room sound
+    preDelay: 0.03,
+    wet: 0.5 
+  }),
   delay: () => new Tone.Delay({ delayTime: 0.25, feedback: 0.3, wet: 0.3 }),
   distortion: () => new Tone.Distortion({ distortion: 0.4, wet: 0.5 }),
   chorus: () => new Tone.Chorus({ frequency: 1.5, delayTime: 3.5, depth: 0.7, wet: 0.5 }),
-  phaser: () => new Tone.Phaser({ frequency: 0.5, octaves: 3, baseFrequency: 350, wet: 0.5 })
+  phaser: () => new Tone.Phaser({ frequency: 0.5, octaves: 3, baseFrequency: 350, wet: 0.5 }),
+  filter: () => new Tone.AutoFilter({ frequency: 1, depth: 1, wet: 0.5 }).start(),
+  echo: () => new Tone.FeedbackDelay({ delayTime: 0.125, feedback: 0.5, wet: 0.4 }),
+  tremolo: () => new Tone.Tremolo({ frequency: 10, depth: 0.5, wet: 0.5 }).start(),
+  bitcrush: () => new Tone.BitCrusher({ bits: 4, wet: 0.5 }),
+  wah: () => new Tone.AutoWah({ baseFrequency: 100, octaves: 6, sensitivity: 0, wet: 0.5 })
 };
 
 export function update(musicData) {
@@ -63,11 +72,19 @@ export function update(musicData) {
         }
       }
 
-      if (track.instrument === 'drums_kit') {
+      if (track.instrument === 'drums_kit' || track.instrument === 'drums_electronic') {
         playInstrument[note.value].triggerAttackRelease(note.duration, time, velocity);
       } else {
-        const frequency = Tone.Frequency(note.value, 'midi').toFrequency();
-        playInstrument.triggerAttackRelease(frequency, note.duration, time, velocity);
+        // Handle chords (arrays of notes)
+        if (Array.isArray(note.value)) {
+          const frequencies = note.value.map(midi => 
+            Tone.Frequency(midi, 'midi').toFrequency()
+          );
+          playInstrument.triggerAttackRelease(frequencies, note.duration, time, velocity);
+        } else {
+          const frequency = Tone.Frequency(note.value, 'midi').toFrequency();
+          playInstrument.triggerAttackRelease(frequency, note.duration, time, velocity);
+        }
       }
     }, expandedNotes.map(note => ({
       time: note.time * secondsPerBeat,
@@ -118,7 +135,7 @@ function createInstrumentWithEffects(track) {
     }
   });
 
-  if (track.instrument === 'drums_kit') {
+  if (track.instrument === 'drums_kit' || track.instrument === 'drums_electronic') {
     if (effectChain.length > 0) {
       instrument.kick.chain(...effectChain, Tone.Destination);
       instrument.snare.chain(...effectChain, Tone.Destination);
@@ -142,12 +159,12 @@ function createInstrument(type, settings) {
   const noteTransition = settings?.noteTransition || 'normal';
   const portamentoTime = settings?.portamento || 0;
 
-  // Apply note transition presets
+  // Apply note transition presets - enhanced for smoother sound
   const transitionPresets = {
-    smooth: { attack: 0.05, release: 1.0 },
-    legato: { attack: 0.01, release: 0.1 },
-    staccato: { attack: 0.001, release: 0.05 },
-    normal: {}
+    smooth: { attack: 0.1, release: 1.5, sustain: 0.8 },
+    legato: { attack: 0.02, release: 0.3, sustain: 0.9 },
+    staccato: { attack: 0.001, release: 0.05, sustain: 0.2 },
+    normal: { attack: 0.02, release: 0.5, sustain: 0.7 }
   };
 
   const transitionSettings = transitionPresets[noteTransition] || {};
@@ -157,10 +174,10 @@ function createInstrument(type, settings) {
       return new Tone.Synth({
         oscillator: { type: 'sawtooth' },
         envelope: {
-          attack: envelope.attack ?? transitionSettings.attack ?? 0.01,
+          attack: envelope.attack ?? transitionSettings.attack ?? 0.02,
           decay: envelope.decay ?? 0.3,
-          sustain: envelope.sustain ?? 0.7,
-          release: envelope.release ?? transitionSettings.release ?? 0.8
+          sustain: envelope.sustain ?? transitionSettings.sustain ?? 0.7,
+          release: envelope.release ?? transitionSettings.release ?? 1.0
         },
         portamento: portamentoTime
       });
@@ -169,10 +186,10 @@ function createInstrument(type, settings) {
       return new Tone.MonoSynth({
         oscillator: { type: 'square' },
         envelope: {
-          attack: envelope.attack ?? transitionSettings.attack ?? 0.001,
+          attack: envelope.attack ?? transitionSettings.attack ?? 0.005,
           decay: envelope.decay ?? 0.2,
-          sustain: envelope.sustain ?? 0.3,
-          release: envelope.release ?? transitionSettings.release ?? 0.5
+          sustain: envelope.sustain ?? transitionSettings.sustain ?? 0.4,
+          release: envelope.release ?? transitionSettings.release ?? 0.7
         },
         filterEnvelope: {
           attack: 0.001,
@@ -189,10 +206,10 @@ function createInstrument(type, settings) {
       return new Tone.PolySynth(Tone.Synth, {
         oscillator: { type: 'fmsine' },
         envelope: {
-          attack: envelope.attack ?? transitionSettings.attack ?? 0.002,
-          decay: envelope.decay ?? 0.3,
-          sustain: envelope.sustain ?? 0.4,
-          release: envelope.release ?? transitionSettings.release ?? 1.2
+          attack: envelope.attack ?? transitionSettings.attack ?? 0.01,
+          decay: envelope.decay ?? 0.4,
+          sustain: envelope.sustain ?? transitionSettings.sustain ?? 0.6,
+          release: envelope.release ?? transitionSettings.release ?? 1.5
         }
       });
 
@@ -200,10 +217,10 @@ function createInstrument(type, settings) {
       return new Tone.PolySynth(Tone.Synth, {
         oscillator: { type: 'sawtooth' },
         envelope: {
-          attack: envelope.attack ?? transitionSettings.attack ?? 0.3,
-          decay: envelope.decay ?? 0.1,
-          sustain: envelope.sustain ?? 0.8,
-          release: envelope.release ?? transitionSettings.release ?? 1.5
+          attack: envelope.attack ?? transitionSettings.attack ?? 0.4,
+          decay: envelope.decay ?? 0.2,
+          sustain: envelope.sustain ?? transitionSettings.sustain ?? 0.8,
+          release: envelope.release ?? transitionSettings.release ?? 2.0
         }
       });
 
@@ -250,6 +267,187 @@ function createInstrument(type, settings) {
           }
         })
       };
+
+    case 'electric_guitar':
+      return new Tone.MonoSynth({
+        oscillator: { type: 'sawtooth' },
+        envelope: {
+          attack: envelope.attack ?? transitionSettings.attack ?? 0.002,
+          decay: envelope.decay ?? 0.1,
+          sustain: envelope.sustain ?? 0.9,
+          release: envelope.release ?? transitionSettings.release ?? 0.3
+        },
+        filterEnvelope: {
+          attack: 0.001,
+          decay: 0.1,
+          sustain: 0.5,
+          release: 0.2,
+          baseFrequency: 400,
+          octaves: 2.5
+        },
+        portamento: portamentoTime
+      });
+
+    case 'organ':
+      return new Tone.PolySynth(Tone.FMSynth, {
+        harmonicity: 3,
+        modulationIndex: 10,
+        oscillator: { type: 'sine' },
+        envelope: {
+          attack: envelope.attack ?? transitionSettings.attack ?? 0.01,
+          decay: envelope.decay ?? 0.1,
+          sustain: envelope.sustain ?? 0.9,
+          release: envelope.release ?? transitionSettings.release ?? 0.2
+        },
+        modulation: { type: 'sine' },
+        modulationEnvelope: {
+          attack: 0.01,
+          decay: 0.2,
+          sustain: 0.3,
+          release: 0.5
+        }
+      });
+
+    case 'flute':
+      return new Tone.MonoSynth({
+        oscillator: { type: 'sine' },
+        envelope: {
+          attack: envelope.attack ?? transitionSettings.attack ?? 0.1,
+          decay: envelope.decay ?? 0.2,
+          sustain: envelope.sustain ?? 0.8,
+          release: envelope.release ?? transitionSettings.release ?? 0.5
+        },
+        filterEnvelope: {
+          attack: 0.1,
+          decay: 0.2,
+          sustain: 0.8,
+          release: 0.5,
+          baseFrequency: 800,
+          octaves: 2
+        },
+        portamento: portamentoTime
+      });
+
+    case 'harp':
+      return new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'triangle' },
+        envelope: {
+          attack: envelope.attack ?? transitionSettings.attack ?? 0.002,
+          decay: envelope.decay ?? 2.0,
+          sustain: envelope.sustain ?? 0.0,
+          release: envelope.release ?? transitionSettings.release ?? 2.0
+        }
+      });
+
+    case 'drums_electronic':
+      return {
+        kick: new Tone.MembraneSynth({
+          pitchDecay: 0.08,
+          octaves: 6,
+          oscillator: { type: 'sine' },
+          envelope: {
+            attack: 0.001,
+            decay: 0.3,
+            sustain: 0.0,
+            release: 0.5,
+            attackCurve: 'exponential'
+          }
+        }),
+        snare: new Tone.MetalSynth({
+          frequency: 200,
+          envelope: {
+            attack: 0.001,
+            decay: 0.1,
+            release: 0.2
+          },
+          harmonicity: 5.1,
+          modulationIndex: 32,
+          resonance: 4000,
+          octaves: 1.5
+        })
+      };
+
+    case 'marimba':
+      return new Tone.PolySynth(Tone.FMSynth, {
+        harmonicity: 1,
+        modulationIndex: 10,
+        oscillator: { type: 'sine' },
+        envelope: {
+          attack: envelope.attack ?? transitionSettings.attack ?? 0.001,
+          decay: envelope.decay ?? 0.3,
+          sustain: envelope.sustain ?? 0.0,
+          release: envelope.release ?? transitionSettings.release ?? 1.0
+        },
+        modulation: { type: 'sine' },
+        modulationEnvelope: {
+          attack: 0.002,
+          decay: 0.2,
+          sustain: 0.0,
+          release: 0.2
+        }
+      });
+
+    case 'trumpet':
+      return new Tone.MonoSynth({
+        oscillator: { type: 'sawtooth' },
+        envelope: {
+          attack: envelope.attack ?? transitionSettings.attack ?? 0.05,
+          decay: envelope.decay ?? 0.1,
+          sustain: envelope.sustain ?? 0.8,
+          release: envelope.release ?? transitionSettings.release ?? 0.3
+        },
+        filterEnvelope: {
+          attack: 0.05,
+          decay: 0.1,
+          sustain: 0.7,
+          release: 0.3,
+          baseFrequency: 600,
+          octaves: 3.5
+        },
+        portamento: portamentoTime
+      });
+
+    case 'violin':
+      return new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'sawtooth' },
+        envelope: {
+          attack: envelope.attack ?? transitionSettings.attack ?? 0.1,
+          decay: envelope.decay ?? 0.2,
+          sustain: envelope.sustain ?? 0.9,
+          release: envelope.release ?? transitionSettings.release ?? 1.0
+        }
+      });
+
+    case 'saxophone':
+      return new Tone.MonoSynth({
+        oscillator: { type: 'sawtooth' },
+        envelope: {
+          attack: envelope.attack ?? transitionSettings.attack ?? 0.03,
+          decay: envelope.decay ?? 0.1,
+          sustain: envelope.sustain ?? 0.8,
+          release: envelope.release ?? transitionSettings.release ?? 0.5
+        },
+        filterEnvelope: {
+          attack: 0.03,
+          decay: 0.1,
+          sustain: 0.5,
+          release: 0.5,
+          baseFrequency: 500,
+          octaves: 3
+        },
+        portamento: portamentoTime
+      });
+
+    case 'pad_synth':
+      return new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'fatsawtooth', count: 3, spread: 30 },
+        envelope: {
+          attack: envelope.attack ?? transitionSettings.attack ?? 0.8,
+          decay: envelope.decay ?? 0.5,
+          sustain: envelope.sustain ?? 0.7,
+          release: envelope.release ?? transitionSettings.release ?? 2.0
+        }
+      });
 
     default:
       return new Tone.Synth();

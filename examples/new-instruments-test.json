@@ -1,0 +1,143 @@
+{
+  "title": "New Instruments and Effects Test",
+  "tempo": 120,
+  "tracks": [
+    {
+      "name": "Electric Guitar",
+      "instrument": "electric_guitar",
+      "notes": [
+        { "time": 0, "duration": 0.5, "value": "E3", "volume": 0.7 },
+        { "time": 0.5, "duration": 0.5, "value": "G3", "volume": 0.7 },
+        { "time": 1, "duration": 0.5, "value": "A3", "volume": 0.7 },
+        { "time": 1.5, "duration": 0.5, "value": "C4", "volume": 0.7 },
+        { "time": 2, "duration": 1, "value": "D4", "volume": 0.8, "effect": "filter", "effectLevel": 0.6 }
+      ],
+      "settings": {
+        "globalEffects": [{ "type": "distortion", "level": 0.4 }]
+      }
+    },
+    {
+      "name": "Organ",
+      "instrument": "organ",
+      "notes": [
+        { "time": 0, "duration": 2, "value": "C3", "volume": 0.5 },
+        { "time": 0, "duration": 2, "value": "E3", "volume": 0.5 },
+        { "time": 0, "duration": 2, "value": "G3", "volume": 0.5 },
+        { "time": 2, "duration": 2, "value": "F3", "volume": 0.5 },
+        { "time": 2, "duration": 2, "value": "A3", "volume": 0.5 },
+        { "time": 2, "duration": 2, "value": "C4", "volume": 0.5 }
+      ],
+      "settings": {
+        "globalEffects": [{ "type": "tremolo", "level": 0.5 }]
+      }
+    },
+    {
+      "name": "Flute",
+      "instrument": "flute",
+      "notes": [
+        { "time": 4, "duration": 0.5, "value": "E5", "volume": 0.6 },
+        { "time": 4.5, "duration": 0.5, "value": "D5", "volume": 0.6 },
+        { "time": 5, "duration": 0.5, "value": "C5", "volume": 0.6 },
+        { "time": 5.5, "duration": 0.5, "value": "B4", "volume": 0.6 },
+        { "time": 6, "duration": 1, "value": "A4", "volume": 0.7, "effect": "echo", "effectLevel": 0.4 }
+      ]
+    },
+    {
+      "name": "Harp",
+      "instrument": "harp",
+      "notes": [
+        { "time": 0, "duration": 4, "value": "C4", "volume": 0.4 },
+        { "time": 0.25, "duration": 3.75, "value": "E4", "volume": 0.4 },
+        { "time": 0.5, "duration": 3.5, "value": "G4", "volume": 0.4 },
+        { "time": 0.75, "duration": 3.25, "value": "C5", "volume": 0.4 }
+      ],
+      "settings": {
+        "globalEffects": [{ "type": "reverb", "level": 0.7 }]
+      }
+    },
+    {
+      "name": "Electronic Drums",
+      "instrument": "drums_electronic",
+      "notes": [
+        { "time": 0, "duration": 0.25, "value": "kick", "volume": 1.0, "repeat": 4 },
+        { "time": 2, "duration": 0.25, "value": "kick", "volume": 1.0, "repeat": 4 },
+        { "time": 4, "duration": 0.25, "value": "kick", "volume": 1.0, "repeat": 4 },
+        { "time": 6, "duration": 0.25, "value": "kick", "volume": 1.0, "repeat": 4 },
+        { "time": 1, "duration": 0.1, "value": "snare", "volume": 0.8 },
+        { "time": 3, "duration": 0.1, "value": "snare", "volume": 0.8 },
+        { "time": 5, "duration": 0.1, "value": "snare", "volume": 0.8 },
+        { "time": 7, "duration": 0.1, "value": "snare", "volume": 0.8, "effect": "bitcrush", "effectLevel": 0.6 }
+      ]
+    },
+    {
+      "name": "Marimba",
+      "instrument": "marimba",
+      "notes": [
+        { "time": 4, "duration": 0.25, "value": "C4", "volume": 0.6 },
+        { "time": 4.25, "duration": 0.25, "value": "E4", "volume": 0.6 },
+        { "time": 4.5, "duration": 0.25, "value": "G4", "volume": 0.6 },
+        { "time": 4.75, "duration": 0.25, "value": "C5", "volume": 0.6 },
+        { "time": 5, "duration": 0.25, "value": "G4", "volume": 0.6 },
+        { "time": 5.25, "duration": 0.25, "value": "E4", "volume": 0.6 },
+        { "time": 5.5, "duration": 0.25, "value": "C4", "volume": 0.6 }
+      ]
+    },
+    {
+      "name": "Trumpet",
+      "instrument": "trumpet",
+      "notes": [
+        { "time": 8, "duration": 0.5, "value": "C4", "volume": 0.7 },
+        { "time": 8.5, "duration": 0.5, "value": "E4", "volume": 0.7 },
+        { "time": 9, "duration": 0.5, "value": "G4", "volume": 0.7 },
+        { "time": 9.5, "duration": 0.5, "value": "C5", "volume": 0.8, "effect": "wah", "effectLevel": 0.5 }
+      ],
+      "settings": {
+        "noteTransition": "smooth",
+        "portamento": 0.05
+      }
+    },
+    {
+      "name": "Violin",
+      "instrument": "violin",
+      "notes": [
+        { "time": 8, "duration": 2, "value": "E4", "volume": 0.5 },
+        { "time": 10, "duration": 2, "value": "A4", "volume": 0.5 }
+      ],
+      "settings": {
+        "globalEffects": [{ "type": "reverb", "level": 0.6 }],
+        "noteTransition": "legato"
+      }
+    },
+    {
+      "name": "Saxophone",
+      "instrument": "saxophone",
+      "notes": [
+        { "time": 12, "duration": 1, "value": "G3", "volume": 0.6 },
+        { "time": 13, "duration": 0.5, "value": "A3", "volume": 0.6 },
+        { "time": 13.5, "duration": 0.5, "value": "C4", "volume": 0.6 },
+        { "time": 14, "duration": 2, "value": "D4", "volume": 0.7 }
+      ],
+      "settings": {
+        "globalEffects": [{ "type": "chorus", "level": 0.3 }]
+      }
+    },
+    {
+      "name": "Pad Synth",
+      "instrument": "pad_synth",
+      "notes": [
+        { "time": 0, "duration": 8, "value": "C2", "volume": 0.3 },
+        { "time": 0, "duration": 8, "value": "G2", "volume": 0.3 },
+        { "time": 0, "duration": 8, "value": "C3", "volume": 0.3 },
+        { "time": 8, "duration": 8, "value": "F2", "volume": 0.3 },
+        { "time": 8, "duration": 8, "value": "C3", "volume": 0.3 },
+        { "time": 8, "duration": 8, "value": "F3", "volume": 0.3 }
+      ],
+      "settings": {
+        "globalEffects": [
+          { "type": "reverb", "level": 0.8 },
+          { "type": "delay", "level": 0.3 }
+        ]
+      }
+    }
+  ]
+}

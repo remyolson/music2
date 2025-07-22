@@ -26,6 +26,8 @@
       <div class="panel editor-panel">
         <div class="panel-header">
           <h2>JSON Editor</h2>
+          <button id="save-json" class="copy-button">Save</button>
+          <button id="load-json" class="copy-button">Load</button>
           <button id="copy-json" class="copy-button">Copy</button>
           <button id="copy-ai" class="copy-button">Copy for AI</button>
         </div>
@@ -44,7 +46,7 @@
             <button id="stop-button" class="control-button">■ Stop</button>
             <div class="zoom-control">
               <label for="zoom-slider">Zoom:</label>
-              <input type="range" id="zoom-slider" min="1" max="5" step="0.1" value="5">
+              <input type="range" id="zoom-slider" min="1" max="5" step="0.1" value="2">
             </div>
           </div>
         </div>
@@ -59,6 +61,7 @@
     </footer>
   </div>
 
+  <input type="file" id="file-input" accept=".json" style="display: none;">
   <script type="module" src="/src/main.js"></script>
 </body>
 
