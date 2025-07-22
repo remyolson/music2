@@ -2,6 +2,20 @@ import * as Tone from '../node_modules/tone/build/esm/index.js';
 import { performanceOptimizer } from './performanceOptimizer.js';
 import { updateLiveInputState } from './state.js';
 import { audioHealthMonitor } from './audioHealthMonitor.js';
+import { 
+  SAFE_LIMITS, 
+  MASTER_BUS_CONFIG, 
+  DEFAULT_ENVELOPE, 
+  TRANSITION_PRESETS,
+  EFFECT_DEFAULTS,
+  FREEZE_REVERB_CONFIG,
+  HARMONIZER_PRESETS,
+  HARMONIZER_MAX_VOICES,
+  HARMONIZER_DEFAULT_VOICE_LEVEL,
+  DRUM_PITCHES,
+  DRUM_DURATIONS,
+  INSTRUMENT_GAIN_FACTOR
+} from './audio/constants/index.js';
 
 let instruments = new Map();
 let parts = [];
@@ -63,13 +77,6 @@ function expandNotesWithRepeat(notes) {
   return expanded;
 }
 
-// Safe parameter limits
-const SAFE_LIMITS = {
-  feedback: 0.7,      // Maximum feedback to prevent runaway
-  wet: 0.6,          // Maximum wet level
-  reverbDecay: 10,   // Maximum reverb decay time
-  delayTime: 2,      // Maximum delay time
-};
 
 // Create effect with safety limits
 function createSafeEffect(type, params = {}) {
@@ -104,25 +111,17 @@ function createSafeEffect(type, params = {}) {
 }
 
 const availableEffects = {
-  reverb: () => new Tone.Freeverb({
-    roomSize: 0.7,
-    dampening: 3000,
-    wet: 0.3
-  }),
-  delay: () => new Tone.FeedbackDelay({ 
-    delayTime: 0.25, 
-    feedback: 0.3,
-    wet: 0.2
-  }),
-  distortion: () => new Tone.Distortion({ distortion: 0.4, wet: 0.5 }),
-  chorus: () => new Tone.Chorus({ frequency: 1.5, delayTime: 3.5, depth: 0.7, wet: 0.5 }),
-  phaser: () => new Tone.Phaser({ frequency: 0.5, octaves: 3, baseFrequency: 350, wet: 0.5 }),
-  filter: () => new Tone.AutoFilter({ frequency: 1, depth: 1, wet: 0.5 }).start(),
-  echo: () => new Tone.FeedbackDelay({ delayTime: 0.125, feedback: 0.5, wet: 0.4 }),
-  tremolo: () => new Tone.Tremolo({ frequency: 10, depth: 0.5, wet: 0.5 }).start(),
-  bitcrush: () => new Tone.BitCrusher({ bits: 4, wet: 0.5 }),
-  wah: () => new Tone.AutoWah({ baseFrequency: 100, octaves: 6, sensitivity: 0, wet: 0.5 }),
-  pitchShift: () => new Tone.PitchShift({ pitch: 0, windowSize: 0.1, delayTime: 0, feedback: 0, wet: 1.0 }),
+  reverb: () => new Tone.Freeverb(EFFECT_DEFAULTS.reverb),
+  delay: () => new Tone.FeedbackDelay(EFFECT_DEFAULTS.delay),
+  distortion: () => new Tone.Distortion(EFFECT_DEFAULTS.distortion),
+  chorus: () => new Tone.Chorus(EFFECT_DEFAULTS.chorus),
+  phaser: () => new Tone.Phaser(EFFECT_DEFAULTS.phaser),
+  filter: () => new Tone.AutoFilter(EFFECT_DEFAULTS.filter).start(),
+  echo: () => new Tone.FeedbackDelay(EFFECT_DEFAULTS.echo),
+  tremolo: () => new Tone.Tremolo(EFFECT_DEFAULTS.tremolo).start(),
+  bitcrush: () => new Tone.BitCrusher(EFFECT_DEFAULTS.bitcrush),
+  wah: () => new Tone.AutoWah(EFFECT_DEFAULTS.wah),
+  pitchShift: () => new Tone.PitchShift(EFFECT_DEFAULTS.pitchShift),
   harmonizer: () => {
     // Create a harmonizer with multiple pitch shifters
     const harmonizer = new Tone.Gain();
@@ -195,16 +194,7 @@ const availableEffects = {
     };
     
     // Preset intervals
-    harmonizer.presets = {
-      maj3: [4, 7, 12],    // Major 3rd, 5th, octave
-      min3: [3, 7, 12],    // Minor 3rd, 5th, octave
-      fifth: [7, 12, 19],  // 5th, octave, octave+5th
-      octave: [12, -12],   // Octave up and down
-      power: [7, 12],      // Power chord (5th, octave)
-      sus4: [5, 7, 12],    // Sus4 chord intervals
-      jazz: [3, 6, 11],    // Minor 3rd, tritone, major 7th
-      bon_iver: [3, 7, 10, 15] // Minor 3rd, 5th, minor 7th, minor 10th
-    };
+    harmonizer.presets = HARMONIZER_PRESETS;
     
     harmonizer.applyPreset = function(presetName) {
       const preset = this.presets[presetName];
@@ -227,26 +217,13 @@ const availableEffects = {
   freezeReverb: () => {
     // Create a freeze reverb with infinite sustain capability
     // Use Freeverb which doesn't require async initialization
-    const reverb = new Tone.Freeverb({
-      roomSize: 0.9,  // Large room but not too extreme
-      dampening: 5000,  // More dampening to prevent harsh frequencies
-      wet: 0.5  // Reduced wet level
-    });
+    const reverb = new Tone.Freeverb(EFFECT_DEFAULTS.freezeReverb);
     
     // Add feedback delay for infinite sustain
-    const feedbackDelay = new Tone.FeedbackDelay({
-      delayTime: 0.5,
-      feedback: 0.7,  // Reduced to safe level
-      wet: 0.3
-    });
+    const feedbackDelay = new Tone.FeedbackDelay(EFFECT_DEFAULTS.freezeReverb.feedbackDelay);
     
     // Add modulation for tail movement
-    const modulation = new Tone.Chorus({
-      frequency: 0.5,
-      delayTime: 2,
-      depth: 0.3,
-      wet: 0.3
-    });
+    const modulation = new Tone.Chorus(EFFECT_DEFAULTS.freezeReverb.modulation);
     
     // Create custom freeze control
     const freezeControl = {
@@ -441,10 +418,10 @@ export function update(musicData) {
         // For drums, handle kick and snare differently
         if (note.value === 'kick') {
           // Kick uses PolySynth
-          playInstrument.kick.triggerAttackRelease('C2', 0.1, time, velocity);
+          playInstrument.kick.triggerAttackRelease(DRUM_PITCHES.kick, DRUM_DURATIONS.kick, time, velocity);
         } else {
           // Snare uses regular synth
-          playInstrument.snare.triggerAttackRelease('A4', 0.05, time, velocity);
+          playInstrument.snare.triggerAttackRelease(DRUM_PITCHES.snare, DRUM_DURATIONS.snare, time, velocity);
         }
       } else {
         // Handle chords (arrays of notes)
@@ -475,7 +452,7 @@ function createInstrumentWithEffects(track) {
   const effectChain = [];
   
   // Add gain stage to reduce individual instrument volumes
-  const instrumentGain = new Tone.Gain(0.5); // Reduce each instrument by 50%
+  const instrumentGain = new Tone.Gain(INSTRUMENT_GAIN_FACTOR);
   effectChain.push(instrumentGain);
 
   // Apply global effects from track settings first
@@ -533,14 +510,8 @@ function createInstrument(type, settings) {
   const portamentoTime = settings?.portamento || 0;
 
   // Apply note transition presets - enhanced for smoother sound
-  const transitionPresets = {
-    smooth: { attack: 0.1, release: 1.5, sustain: 0.8 },
-    legato: { attack: 0.02, release: 0.3, sustain: 0.9 },
-    staccato: { attack: 0.001, release: 0.05, sustain: 0.2 },
-    normal: { attack: 0.02, release: 0.5, sustain: 0.7 }
-  };
 
-  const transitionSettings = transitionPresets[noteTransition] || {};
+  const transitionSettings = TRANSITION_PRESETS[noteTransition] || {};
 
   switch (type) {
     case 'synth_lead':
@@ -1673,7 +1644,7 @@ export function setHarmonyCallback(callback) {
 // Initialize master bus
 function initializeMasterBus() {
   if (!masterBus) {
-    masterBus = new Tone.Gain(0.2); // Further reduce gain to prevent clipping
+    masterBus = new Tone.Gain(MASTER_BUS_CONFIG.gain);
     
     // Create a compressor for dynamic control
     if (!masterCompressor) {
@@ -1696,7 +1667,7 @@ function initializeMasterBus() {
     
     // Create a limiter to prevent clipping
     if (!masterLimiter) {
-      masterLimiter = new Tone.Limiter(-6); // Even more conservative limiting
+      masterLimiter = new Tone.Limiter(MASTER_BUS_CONFIG.limiterThreshold);
     }
     
     // Connect master bus through processing chain to destination
