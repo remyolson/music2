@@ -222,6 +222,24 @@ const Tone = {
   })),
   Frequency: vi.fn((value, type) => ({
     toFrequency: () => 440 // Default A4
+  })),
+  Meter: vi.fn(() => ({
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    dispose: vi.fn(),
+    getValue: vi.fn(() => -20) // Return a mock dB value
+  })),
+  Waveform: vi.fn(() => ({
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    dispose: vi.fn(),
+    getValue: vi.fn(() => new Float32Array(512))
+  })),
+  FFT: vi.fn(() => ({
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    dispose: vi.fn(),
+    getValue: vi.fn(() => new Float32Array(512))
   }))
 };
 
