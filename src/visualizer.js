@@ -1,4 +1,5 @@
 import { getTransport } from './audioEngine.js';
+import * as Tone from 'tone';
 
 let svg = null;
 let playhead = null;
@@ -227,12 +228,16 @@ function startAnimation() {
     cancelAnimationFrame(animationId);
   }
 
+  let prevLoopedPosition = 0;
+
   function animate() {
     if (!playhead || !currentData) return;
 
     const transport = getTransport();
-    // Use seconds for more accurate timing
-    const seconds = transport.seconds;
+    // Transport.seconds is ahead by lookAhead; compensate so visual matches audible output
+    const lookAhead = Tone.getContext().lookAhead || 0;
+    let seconds = transport.seconds - lookAhead;
+    if (seconds < 0) seconds = 0;
     const bpm = transport.bpm.value;
     const secondsPerBeat = 60 / bpm;
     const totalBeats = seconds / secondsPerBeat;
@@ -241,10 +246,29 @@ function startAnimation() {
     const pixelsPerBeat = BASE_PIXELS_PER_BEAT * zoomLevel;
 
     const loopedPosition = loopEnd > 0 ? totalBeats % loopEnd : totalBeats;
+
+    // Detect wrap-around (loop restart)
+    const visContainer = document.getElementById('visualizer');
+    if (loopedPosition < prevLoopedPosition && visContainer) {
+      visContainer.scrollLeft = 0;
+    }
+    prevLoopedPosition = loopedPosition;
+
     const x = MARGIN + (loopedPosition * pixelsPerBeat);
 
     playhead.setAttribute('x1', x);
     playhead.setAttribute('x2', x);
+
+    // Auto-scroll container to keep playhead near center
+    const container = document.getElementById('visualizer');
+    if (container) {
+      const center = container.clientWidth / 2;
+      const desiredScroll = Math.max(0, x - center);
+      // Only update if beyond center for smoothness
+      if (x > container.scrollLeft + center) {
+        container.scrollLeft = desiredScroll;
+      }
+    }
 
     animationId = requestAnimationFrame(animate);
   }
