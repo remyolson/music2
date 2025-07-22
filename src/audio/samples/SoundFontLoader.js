@@ -124,8 +124,23 @@ export class SoundFontLoader {
       return sampler;
     } catch (error) {
       console.warn('Failed to create Tone.Sampler, creating fallback:', error);
-      // Return a simple PolySynth as fallback
-      return this.registry.register(new Tone.PolySynth(Tone.Synth));
+      // Return a simple PolySynth as fallback with enhanced interface
+      const fallbackSynth = this.registry.register(new Tone.PolySynth(Tone.Synth));
+      
+      // Add missing methods that orchestral instruments expect
+      fallbackSynth.play = function(note, velocity = 100, time = '+0', duration = '4n') {
+        this.triggerAttackRelease(note, duration, time, velocity / 127);
+      };
+      
+      fallbackSynth.setArticulation = function(articulation) {
+        // No-op for basic synth
+      };
+      
+      fallbackSynth.addVibrato = function(rate, depth) {
+        // No-op for basic synth
+      };
+      
+      return fallbackSynth;
     }
   }
 

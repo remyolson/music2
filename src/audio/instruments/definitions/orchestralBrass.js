@@ -146,7 +146,7 @@ function createBrassInstrument(instrumentType) {
       // Create mute filtering system
       const muteFilter = registry.register(new Tone.Filter(2000, 'lowpass'));
       const muteGain = registry.register(new Tone.Gain(1.0));
-      const muteResonance = registry.register(new Tone.Filter(1000, 'bandpass', 1));
+      const muteResonance = registry.register(new Tone.Filter(1000, 'bandpass'));
       
       // Create brass brightness control
       const brightnessEQ = registry.register(new Tone.EQ3(0, 0, 0));
@@ -263,12 +263,12 @@ function createBrassInstrument(instrumentType) {
           }
         },
 
-        triggerAttackRelease: (notes, duration, time = '+0', velocity = 100) => {
+        triggerAttackRelease: function(notes, duration, time = '+0', velocity = 100) {
           this.play(notes, velocity, time, duration);
         },
 
         // Mute control
-        setMute: (muteType) => {
+        setMute: function(muteType) {
           if (BRASS_MUTES[muteType]) {
             this.currentMute = muteType;
             const muteSettings = BRASS_MUTES[muteType];
@@ -500,28 +500,28 @@ function createBrassInstrument(instrumentType) {
         currentMute: config.defaultMute,
         
         // Simplified interface matching sample-based version
-        play: (notes, velocity = 100, time = '+0', duration = '4n') => {
+        play: function(notes, velocity = 100, time = '+0', duration = '4n') {
           const noteArray = Array.isArray(notes) ? notes : [notes];
           // For synthesis, only play one note (brass instruments are typically monophonic)
           const note = noteArray[0];
           synth.triggerAttackRelease(note, duration, time, velocity / 127);
         },
 
-        triggerAttack: (notes, time = '+0', velocity = 100) => {
+        triggerAttack: function(notes, time = '+0', velocity = 100) {
           const note = Array.isArray(notes) ? notes[0] : notes;
           synth.triggerAttack(note, time, velocity / 127);
         },
 
-        triggerRelease: (notes, time = '+0') => {
+        triggerRelease: function(notes, time = '+0') {
           synth.triggerRelease(time);
         },
 
-        triggerAttackRelease: (notes, duration, time = '+0', velocity = 100) => {
+        triggerAttackRelease: function(notes, duration, time = '+0', velocity = 100) {
           this.play(notes, velocity, time, duration);
         },
 
         // Simplified mute control (affects filter and distortion)
-        setMute: (muteType) => {
+        setMute: function(muteType) {
           this.currentMute = muteType;
           const muteSettings = BRASS_MUTES[muteType];
           

@@ -449,7 +449,13 @@ export class SampleLibrary {
       play: (note, velocity = 100, time, duration) => {
         // Use current articulation
         const articulationSampler = sampler.samplers?.[strings.currentArticulation] || sampler;
-        articulationSampler.play(note, velocity, time, duration);
+        if (articulationSampler && articulationSampler.play) {
+          articulationSampler.play(note, velocity, time, duration);
+        } else if (articulationSampler && articulationSampler.triggerAttackRelease) {
+          articulationSampler.triggerAttackRelease(note, duration, time, velocity / 127);
+        } else {
+          console.warn('String sampler missing play method, falling back to basic synthesis');
+        }
       },
       
       addVibrato: (rate = 5, depth = 0.1) => {
