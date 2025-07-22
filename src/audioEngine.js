@@ -24,6 +24,7 @@ import {
   getMasterEffectChain
 } from './audio/core/MasterBus.js';
 import { musicExpressionSystem } from './audio/dynamics/MusicExpressionSystem.js';
+import { humanPerformanceSystem } from './audio/performance/HumanPerformanceSystem.js';
 
 const instruments = new Map();
 let parts = [];
@@ -39,6 +40,9 @@ performanceOptimizer.initialize().catch(console.warn);
 
 // Initialize music expression system
 musicExpressionSystem.initialize().catch(console.warn);
+
+// Initialize human performance system
+humanPerformanceSystem.initialize().catch(console.warn);
 
 function expandNotesWithRepeat(notes) {
   const expanded = [];
@@ -122,6 +126,16 @@ export async function update(musicData) {
       harmonizeMix: note.harmonizeMix,
       harmonizeLevels: note.harmonizeLevels
     }));
+
+    // Apply human performance if enabled
+    const humanizedNotes = humanPerformanceSystem.enabled ? 
+      humanPerformanceSystem.processSequence(partNotes, {
+        instrumentId: track.name,
+        instrumentType: track.instrument,
+        tempo: musicData.tempo,
+        timeSignature: [4, 4], // Default, could be extracted from musicData
+        genre: track.genre || 'natural'
+      }) : partNotes;
 
     const part = new Tone.Part((time, note) => {
       try {
@@ -257,7 +271,7 @@ export async function update(musicData) {
       } catch (error) {
         console.error(`Error playing note in track ${track.name}:`, error, note);
       }
-    }, partNotes);
+    }, humanizedNotes);
 
     part.trackIndex = trackIndex;
     part.loop = true;
@@ -560,5 +574,42 @@ export function setHarmonyCallback(callback) {
 // Apply master effect preset
 export function applyMasterEffectPreset(presetData) {
   applyMasterEffectPresetModule(presetData);
+}
+
+// Human Performance Controls
+export function setHumanPerformanceEnabled(enabled) {
+  humanPerformanceSystem.enabled = enabled;
+}
+
+export function setHumanPerformanceStyle(style) {
+  humanPerformanceSystem.loadProfile(style);
+}
+
+export function setHumanPerformanceSkillLevel(level) {
+  humanPerformanceSystem.setSkillLevel(level);
+}
+
+export function getHumanPerformanceMetrics() {
+  return humanPerformanceSystem.getMetrics();
+}
+
+export function setHumanPerformanceParameter(param, value) {
+  switch (param) {
+    case 'timing':
+      humanPerformanceSystem.timing.amount = value;
+      break;
+    case 'velocity':
+      humanPerformanceSystem.velocity.variationAmount = value;
+      break;
+    case 'groove':
+      humanPerformanceSystem.groove.intensity = value;
+      break;
+    case 'swing':
+      humanPerformanceSystem.timing.setSwing(value);
+      break;
+    case 'ensemble':
+      humanPerformanceSystem.ensemble.tightness = value;
+      break;
+  }
 }
 
