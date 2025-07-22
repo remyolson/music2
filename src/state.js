@@ -1,4 +1,4 @@
-let currentState = null;
+let currentState = {};
 const subscribers = [];
 
 // Live input state
@@ -15,7 +15,8 @@ export function getState() {
 }
 
 export function update(newState) {
-  currentState = newState;
+  // Merge new state with current state instead of replacing
+  currentState = { ...currentState, ...newState };
   subscribers.forEach(callback => callback(currentState));
 }
 

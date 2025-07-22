@@ -761,23 +761,33 @@ export async function createInstrumentWithEffects(track, getMasterBus) {
   trackEffects.forEach(effectName => {
     // Skip if already added as global effect
     const isGlobal = track.settings?.globalEffects?.some(e => e.type === effectName);
-    if (!isGlobal) {
-      const effect = availableEffects[effectName]();
-      effectChain.push(effect);
+    if (!isGlobal && availableEffects[effectName]) {
+      try {
+        const effect = availableEffects[effectName]();
+        if (effect) {
+          effectChain.push(effect);
+        }
+      } catch (error) {
+        console.warn(`Failed to create effect ${effectName}:`, error);
+      }
     }
   });
 
   if (track.instrument === 'drums_kit' || track.instrument === 'drums_electronic') {
-    if (effectChain.length > 0) {
-      instrument.kick.chain(...effectChain, getMasterBus());
-      instrument.snare.chain(...effectChain, getMasterBus());
+    // Filter out any undefined or null effects before chaining
+    const validEffects = effectChain.filter(effect => effect != null);
+    if (validEffects.length > 0) {
+      instrument.kick.chain(...validEffects, getMasterBus());
+      instrument.snare.chain(...validEffects, getMasterBus());
     } else {
       instrument.kick.connect(getMasterBus());
       instrument.snare.connect(getMasterBus());
     }
   } else {
-    if (effectChain.length > 0) {
-      instrument.chain(...effectChain, getMasterBus());
+    // Filter out any undefined or null effects before chaining
+    const validEffects = effectChain.filter(effect => effect != null);
+    if (validEffects.length > 0) {
+      instrument.chain(...validEffects, getMasterBus());
     } else {
       instrument.connect(getMasterBus());
     }

@@ -99,8 +99,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   subscribe((musicData) => {
-    updateAudioEngine(musicData);
-    updateVisualizer(musicData);
+    // Validate musicData before passing to subsystems
+    if (musicData && typeof musicData === 'object') {
+      updateAudioEngine(musicData);
+      updateVisualizer(musicData);
+    }
 
     // Update effect chain visualization
     if (effectChainViz) {

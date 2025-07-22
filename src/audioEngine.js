@@ -85,11 +85,13 @@ export async function update(musicData) {
 
   cleanup();
 
-  if (!musicData) {return;}
+  if (!musicData || !musicData.tracks || !musicData.tempo) {return;}
 
-  Tone.Transport.bpm.value = musicData.tempo;
+  // Ensure tempo is a valid number
+  const tempo = Math.max(60, Math.min(200, musicData.tempo || 120));
+  Tone.Transport.bpm.value = tempo;
 
-  const secondsPerBeat = 60 / musicData.tempo;
+  const secondsPerBeat = 60 / tempo;
 
   for (let trackIndex = 0; trackIndex < musicData.tracks.length; trackIndex++) {
     const track = musicData.tracks[trackIndex];

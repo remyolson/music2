@@ -61,7 +61,7 @@ export function update(musicData) {
 
   svg.innerHTML = '';
 
-  if (!musicData) {return;}
+  if (!musicData || !musicData.tracks) {return;}
 
   // Update track count display
   if (trackCountElement) {
@@ -338,15 +338,21 @@ function startAnimation() {
 }
 
 function getLoopEnd(musicData) {
+  if (!musicData || !musicData.tracks || !Array.isArray(musicData.tracks)) {
+    return 32; // Default to 32 beats if no valid data
+  }
+  
   let maxTime = 0;
   musicData.tracks.forEach(track => {
-    const notes = expandNotesWithRepeat(track.notes);
-    notes.forEach(note => {
-      const endTime = note.time + note.duration;
-      if (endTime > maxTime) {maxTime = endTime;}
-    });
+    if (track && track.notes && Array.isArray(track.notes)) {
+      const notes = expandNotesWithRepeat(track.notes);
+      notes.forEach(note => {
+        const endTime = note.time + note.duration;
+        if (endTime > maxTime) {maxTime = endTime;}
+      });
+    }
   });
-  return Math.ceil(maxTime);
+  return Math.ceil(maxTime) || 32; // Fallback to 32 beats
 }
 
 function handleTrackHover(trackIndex, isHovering) {
