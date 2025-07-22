@@ -112,7 +112,14 @@ function createStringInstrument(instrumentType) {
 
       // Create string resonance simulation
       const resonanceGain = registry.register(new Tone.Gain(0.1));
-      const resonanceDelay = registry.register(new Tone.FeedbackDelay(0.03, 0.15));
+      let resonanceDelay;
+      try {
+        resonanceDelay = new Tone.FeedbackDelay(0.03, 0.15);
+      } catch (error) {
+        console.warn('FeedbackDelay failed, using basic delay for string resonance:', error.message);
+        resonanceDelay = new Tone.Delay(0.03);
+      }
+      registry.register(resonanceDelay);
       const resonanceFilter = registry.register(new Tone.Filter(2000, 'bandpass'));
       
       resonanceGain.chain(resonanceFilter, resonanceDelay, Tone.Destination);

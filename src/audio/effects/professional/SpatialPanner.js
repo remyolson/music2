@@ -2,6 +2,21 @@ import * as Tone from 'tone';
 import { DisposalRegistry } from '../../../utils/DisposalRegistry.js';
 
 /**
+ * Helper function to create FeedbackDelay with error handling
+ * @param {Object} options - Delay options
+ * @param {string} fallbackName - Name for logging
+ * @returns {Object} FeedbackDelay or fallback Delay
+ */
+function createFeedbackDelaySafe(options, fallbackName = 'Effect') {
+  try {
+    return new Tone.FeedbackDelay(options);
+  } catch (error) {
+    console.warn(`${fallbackName} FeedbackDelay failed, using basic delay:`, error.message);
+    return new Tone.Delay(options.delayTime || 0.1);
+  }
+}
+
+/**
  * SpatialPanner - Advanced 3D spatial positioning
  * Includes binaural processing, width control, and auto-panning
  */
@@ -57,11 +72,11 @@ export class SpatialPanner {
     }));
     
     // Room simulation
-    this.earlyReflections = this.registry.register(new Tone.FeedbackDelay({
+    this.earlyReflections = this.registry.register(createFeedbackDelaySafe({
       delayTime: 0.02,
       feedback: 0.2,
       wet: 0
-    }));
+    }, 'SpatialPanner Early Reflections'));
     
     // Output gain
     this.outputGain = this.registry.register(new Tone.Gain(1));

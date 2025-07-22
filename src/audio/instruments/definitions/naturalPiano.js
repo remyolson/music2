@@ -48,7 +48,14 @@ export default {
     
     // Create sympathetic resonance simulation
     const resonanceGain = registry.register(new Tone.Gain(0.15));
-    const resonanceDelay = registry.register(new Tone.FeedbackDelay(0.1, 0.2));
+    let resonanceDelay;
+    try {
+      resonanceDelay = new Tone.FeedbackDelay(0.1, 0.2);
+    } catch (error) {
+      console.warn('FeedbackDelay failed, using basic delay for piano resonance:', error.message);
+      resonanceDelay = new Tone.Delay(0.1);
+    }
+    registry.register(resonanceDelay);
     const resonanceFilter = registry.register(new Tone.Filter(1000, 'highpass'));
     
     // Chain resonance effects

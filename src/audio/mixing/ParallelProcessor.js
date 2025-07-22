@@ -373,13 +373,23 @@ class ProcessingChain {
         return new Tone.Chebyshev(params);
         
       case 'pitchShift':
-        return new Tone.PitchShift(params);
+        try {
+          return new Tone.PitchShift(params);
+        } catch (error) {
+          console.warn('PitchShift failed in ParallelProcessor, using filter fallback:', error.message);
+          return new Tone.Filter(440, 'bandpass');
+        }
         
       case 'stereoWidener':
         return new Tone.StereoWidener(params);
         
       case 'delay':
-        return new Tone.FeedbackDelay(params);
+        try {
+          return new Tone.FeedbackDelay(params);
+        } catch (error) {
+          console.warn('FeedbackDelay failed in ParallelProcessor, using basic delay:', error.message);
+          return new Tone.Delay(params.delayTime || 0.1);
+        }
         
       case 'reverb':
         return new Tone.Reverb(params);

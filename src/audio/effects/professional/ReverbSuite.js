@@ -1,5 +1,20 @@
 import * as Tone from 'tone';
 import { DisposalRegistry } from '../../../utils/DisposalRegistry.js';
+
+/**
+ * Helper function to create FeedbackDelay with error handling
+ * @param {Object} options - Delay options
+ * @param {string} fallbackName - Name for logging
+ * @returns {Object} FeedbackDelay or fallback Delay
+ */
+function createFeedbackDelaySafe(options, fallbackName = 'Effect') {
+  try {
+    return new Tone.FeedbackDelay(options);
+  } catch (error) {
+    console.warn(`${fallbackName} FeedbackDelay failed, using basic delay:`, error.message);
+    return new Tone.Delay(options.delayTime || 0.1);
+  }
+}
 import { ConvolutionReverb } from './ConvolutionReverb.js';
 
 /**
@@ -522,11 +537,11 @@ class RoomReverb {
     }));
     
     // Early reflections
-    this.earlyReflections = this.registry.register(new Tone.FeedbackDelay({
+    this.earlyReflections = this.registry.register(createFeedbackDelaySafe({
       delayTime: 0.02,
       feedback: 0.2,
       wet: 0.5
-    }));
+    }, 'PlateReverb Early Reflections'));
     
     // Room character
     this.roomFilter = this.registry.register(new Tone.Filter({
@@ -708,17 +723,17 @@ class SpringReverb {
     this.registry = new DisposalRegistry('spring-reverb');
     
     // Simulate spring characteristics
-    this.spring1 = this.registry.register(new Tone.FeedbackDelay({
+    this.spring1 = this.registry.register(createFeedbackDelaySafe({
       delayTime: 0.03,
       feedback: 0.85,
       wet: 1.0
-    }));
+    }, 'SpringReverb Spring1'));
     
-    this.spring2 = this.registry.register(new Tone.FeedbackDelay({
+    this.spring2 = this.registry.register(createFeedbackDelaySafe({
       delayTime: 0.041,
       feedback: 0.82,
       wet: 1.0
-    }));
+    }, 'SpringReverb Spring2'));
     
     // Metallic resonance
     this.resonance = this.registry.register(new Tone.Filter({

@@ -985,11 +985,18 @@ class BusDelay {
   constructor() {
     this.registry = new DisposalRegistry('bus-delay');
     
-    this.delay = this.registry.register(new Tone.FeedbackDelay({
-      delayTime: 0.25,
-      feedback: 0.3,
-      wet: 0.5
-    }));
+    let delay;
+    try {
+      delay = new Tone.FeedbackDelay({
+        delayTime: 0.25,
+        feedback: 0.3,
+        wet: 0.5
+      });
+    } catch (error) {
+      console.warn('FeedbackDelay failed in BusProcessor, using basic delay:', error.message);
+      delay = new Tone.Delay(0.25);
+    }
+    this.delay = this.registry.register(delay);
     
     this.input = this.delay;
     this.output = this.delay;
