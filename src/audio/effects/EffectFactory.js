@@ -50,20 +50,106 @@ export function createSafeEffect(type, params = {}) {
 }
 
 /**
+ * Helper function to create effects safely with AudioWorklet error handling
+ * @param {Function} createEffect - Function to create the primary effect
+ * @param {Function} createFallback - Function to create fallback effect
+ * @param {string} effectName - Name of the effect for logging
+ * @returns {Object} The created effect (primary or fallback)
+ */
+function createEffectSafely(createEffect, createFallback, effectName) {
+  try {
+    const effect = createEffect();
+    
+    // For effects that might have async AudioWorklet loading, wrap in a promise-like error handler
+    if (effect && typeof effect.toDestination === 'function') {
+      // This is a Tone.js effect, add error event listener if possible
+      if (effect.context && effect.context.onerror) {
+        const originalOnError = effect.context.onerror;
+        effect.context.onerror = (error) => {
+          console.warn(`Late ${effectName} error caught, effect might be unstable:`, error);
+          originalOnError?.call(effect.context, error);
+        };
+      }
+    }
+    
+    return effect;
+  } catch (error) {
+    // Handle AudioWorklet registration errors
+    if (error.message.includes('already registered') || 
+        error.message.includes('AudioWorkletProcessor') ||
+        error.message.includes('registerProcessor') ||
+        error.name === 'InvalidStateError' ||
+        error.name === 'NotSupportedError') {
+      console.warn(`${effectName} AudioWorklet registration failed, using fallback:`, error.message);
+      return createFallback();
+    }
+    
+    // Handle other errors (missing audio context, etc.)
+    if (error.message.includes('AudioContext') || error.message.includes('audio')) {
+      console.warn(`${effectName} audio error, using fallback:`, error.message);
+      return createFallback();
+    }
+    
+    // Unexpected errors - still provide fallback but log more details
+    console.error(`Unexpected error creating ${effectName}, using fallback:`, error);
+    return createFallback();
+  }
+}
+
+/**
  * Available effect factories
  */
 export const availableEffects = {
   reverb: () => new Tone.Freeverb(EFFECT_DEFAULTS.reverb),
-  delay: () => new Tone.FeedbackDelay(EFFECT_DEFAULTS.delay),
+  
+  delay: () => createEffectSafely(
+    () => new Tone.FeedbackDelay(EFFECT_DEFAULTS.delay),
+    () => new Tone.Delay(EFFECT_DEFAULTS.delay.delayTime),
+    'FeedbackDelay'
+  ),
+  
   distortion: () => new Tone.Distortion(EFFECT_DEFAULTS.distortion),
   chorus: () => new Tone.Chorus(EFFECT_DEFAULTS.chorus),
   phaser: () => new Tone.Phaser(EFFECT_DEFAULTS.phaser),
   filter: () => new Tone.AutoFilter(EFFECT_DEFAULTS.filter).start(),
-  echo: () => new Tone.FeedbackDelay(EFFECT_DEFAULTS.echo),
+  
+  echo: () => createEffectSafely(
+    () => new Tone.FeedbackDelay(EFFECT_DEFAULTS.echo),
+    () => new Tone.Delay(EFFECT_DEFAULTS.echo.delayTime),
+    'Echo'
+  ),
+  
   tremolo: () => new Tone.Tremolo(EFFECT_DEFAULTS.tremolo).start(),
-  bitcrush: () => new Tone.BitCrusher(EFFECT_DEFAULTS.bitcrush),
+  
+  bitcrush: (() => {
+    let hasWarnedDev = false; // Only warn once in development
+    
+    return () => {
+      // Temporary workaround: disable BitCrusher in development due to AudioWorklet conflicts
+      if (import.meta.env?.DEV || window.location.hostname === 'localhost') {
+        if (!hasWarnedDev) {
+          console.warn('BitCrusher disabled in development environment, using Distortion fallback');
+          hasWarnedDev = true;
+        }
+        return new Tone.Distortion(0.8);
+      }
+      
+      return createEffectSafely(
+        () => new Tone.BitCrusher(EFFECT_DEFAULTS.bitcrush),
+        () => new Tone.Distortion(0.8),
+        'BitCrusher'
+      );
+    };
+  })(),
+  
   wah: () => new Tone.AutoWah(EFFECT_DEFAULTS.wah),
-  pitchShift: () => new Tone.PitchShift(EFFECT_DEFAULTS.pitchShift),
+  
+  pitchShift: () => createEffectSafely(
+    () => new Tone.PitchShift(EFFECT_DEFAULTS.pitchShift),
+    () => new Tone.Filter(400, 'highpass'),
+    'PitchShift'
+  ),
+  
   harmonizer: createHarmonizer,
   freezeReverb: createFreezeReverb
 };
@@ -82,14 +168,20 @@ function createHarmonizer() {
   const maxVoices = HARMONIZER_MAX_VOICES; // Support up to 4 harmony voices
 
   for (let i = 0; i < maxVoices; i++) {
-    const voice = {
-      pitchShifter: new Tone.PitchShift({
+    const pitchShifter = createEffectSafely(
+      () => new Tone.PitchShift({
         pitch: 0,
         windowSize: 0.1,
         delayTime: 0,
         feedback: 0,
         wet: 1.0
       }),
+      () => new Tone.Filter(440, 'bandpass'), // Basic filter as fallback
+      `Harmonizer Voice ${i} PitchShift`
+    );
+
+    const voice = {
+      pitchShifter,
       gain: new Tone.Gain(HARMONIZER_DEFAULT_VOICE_LEVEL) // Individual voice level control
     };
 
@@ -128,7 +220,15 @@ function createHarmonizer() {
     // intervals is an array like [3, 5, 12] for 3rd, 5th, octave
     intervals.forEach((interval, index) => {
       if (index < voices.length) {
-        voices[index].pitchShifter.pitch = interval;
+        // Check if this is a real PitchShift or a fallback filter
+        if (voices[index].pitchShifter.pitch !== undefined) {
+          voices[index].pitchShifter.pitch = interval;
+        } else if (voices[index].pitchShifter.frequency) {
+          // For filter fallback, adjust frequency based on interval
+          const baseFreq = 440;
+          const newFreq = baseFreq * Math.pow(2, interval / 12);
+          voices[index].pitchShifter.frequency.value = Math.min(Math.max(newFreq, 20), 20000);
+        }
         voices[index].gain.gain.value = interval !== 0 ? HARMONIZER_DEFAULT_VOICE_LEVEL : 0;
       }
     });
@@ -189,8 +289,12 @@ function createFreezeReverb() {
   const reverb = new Tone.Freeverb(EFFECT_DEFAULTS.freezeReverb);
   registry.register(reverb);
 
-  // Add feedback delay for infinite sustain
-  const feedbackDelay = new Tone.FeedbackDelay(EFFECT_DEFAULTS.freezeReverb.feedbackDelay);
+  // Add feedback delay for infinite sustain (with error handling for worklet registration)
+  const feedbackDelay = createEffectSafely(
+    () => new Tone.FeedbackDelay(EFFECT_DEFAULTS.freezeReverb.feedbackDelay),
+    () => new Tone.Delay(EFFECT_DEFAULTS.freezeReverb.feedbackDelay.delayTime),
+    'FreezeReverb FeedbackDelay'
+  );
   registry.register(feedbackDelay);
 
   // Add modulation for tail movement

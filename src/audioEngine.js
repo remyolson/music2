@@ -176,14 +176,21 @@ export async function update(musicData) {
     const loopEndForCallback = compositionLoopEnd; // Capture in closure
     const part = new Tone.Part((time, note) => {
       try {
-        // Debug: Log note triggers with more detail
+        // Debug: Log only first few notes and loop transitions
         const loopCycle = Math.floor(time / loopEndForCallback);
         const timeInLoop = time % loopEndForCallback;
-        console.log(`🎼 Note: ${track.name}, value=${note.value}, time=${time.toFixed(2)}s, loop=${loopCycle}, timeInLoop=${timeInLoop.toFixed(2)}s`);
         
-        // Check if we're past the expected loop end
-        if (time > loopEndForCallback) {
-          console.log(`⚠️ Note scheduled beyond loop end! time=${time.toFixed(2)}s > loopEnd=${loopEndForCallback.toFixed(2)}s`);
+        // Only log very first notes to reduce spam
+        if (time < 0.5) {
+          console.log(`🎼 Note: ${track.name}, value=${note.value}, time=${time.toFixed(2)}s, loop=${loopCycle}, timeInLoop=${timeInLoop.toFixed(2)}s`);
+        }
+        
+        // Check if we're past the expected loop end (limit log spam)
+        if (time > loopEndForCallback && loopCycle <= 1) {
+          // Only log the first few timing issues to avoid spam
+          if (Math.random() < 0.01) { // 1% of warnings
+            console.log(`⚠️ Note scheduled beyond loop end! time=${time.toFixed(2)}s > loopEnd=${loopEndForCallback.toFixed(2)}s`);
+          }
         }
         
         // Validate note data
@@ -205,11 +212,20 @@ export async function update(musicData) {
         // Handle pitch shifting effect if pitch parameter is present
         if (note.pitch !== undefined && note.pitch !== 0) {
         // Create temporary pitch effect that will be cleaned up
-          const pitchEffect = new Tone.PitchShift({
-            pitch: note.pitch,
-            windowSize: 0.1,
-            wet: 1.0
-          });
+          let pitchEffect;
+          try {
+            pitchEffect = new Tone.PitchShift({
+              pitch: note.pitch,
+              windowSize: 0.1,
+              wet: 1.0
+            });
+          } catch (error) {
+            // Fallback to filter for pitch effect
+            console.warn('PitchShift failed, using filter fallback:', error.message);
+            const baseFreq = 440;
+            const newFreq = baseFreq * Math.pow(2, note.pitch / 12);
+            pitchEffect = new Tone.Filter(Math.min(Math.max(newFreq, 20), 20000), 'bandpass');
+          }
 
           // Connect through pitch effect
           playInstrument.disconnect();
@@ -267,21 +283,61 @@ export async function update(musicData) {
         }
 
         if (note.effect && availableEffects[note.effect]) {
-          const noteEffect = effects.get(`${track.name}-${note.effect}-${time}`);
-          if (!noteEffect) {
-            const newEffect = availableEffects[note.effect]();
-            if (note.effectLevel !== undefined) {
-              newEffect.wet.value = note.effectLevel;
+          // Check if this is a drum kit first - skip effect processing for drums
+          if (track.instrument === 'drums_kit' || track.instrument === 'drums_electronic') {
+            // Skip effect creation for drums as they can't use standard effect routing
+            // Only log this once per track to avoid spam
+            if (!effects.has(`${track.name}-drum-warning`)) {
+              console.warn(`⚠️ Effects not supported for drum tracks. All effects ignored for ${track.name}.`);
+              effects.set(`${track.name}-drum-warning`, true); // Use as marker to prevent repeated warnings
             }
+          } else {
+            // Use shared effect per track instead of per note to prevent accumulation
+            const effectKey = `${track.name}-${note.effect}`;
+            let trackEffect = effects.get(effectKey);
+            
+            if (!trackEffect) {
+              // Create new shared effect for this track
+              trackEffect = availableEffects[note.effect]();
+              effects.set(effectKey, trackEffect);
+              trackEffect.connect(getMasterBus());
+              
+              // Log effect creation for debugging
+              console.log(`🎛️ Created shared effect: ${effectKey} (total effects: ${effects.size})`);
+              
+              // Update health monitor
+              audioHealthMonitor.updateEffectCount(effects.size + getMasterEffectChain().length);
+              
+              // Safety check: warn if too many effects
+              if (effects.size > 15) {
+                console.warn(`⚠️ High effect count detected: ${effects.size} effects. This may cause performance issues.`);
+              }
+            }
+            
+            // Update effect parameters for this note
+            if (note.effectLevel !== undefined && trackEffect.wet) {
+              trackEffect.wet.value = note.effectLevel;
+            }
+            
             // Handle pitch parameter for pitchShift effect
             if (note.effect === 'pitchShift' && note.pitch !== undefined) {
-              newEffect.pitch = note.pitch;
+              if (trackEffect.pitch !== undefined) {
+                trackEffect.pitch = note.pitch;
+              } else if (trackEffect.frequency) {
+                // For filter fallback, adjust frequency based on interval
+                const baseFreq = 440;
+                const newFreq = baseFreq * Math.pow(2, note.pitch / 12);
+                trackEffect.frequency.value = Math.min(Math.max(newFreq, 20), 20000);
+              }
             }
-            effects.set(`${track.name}-${note.effect}-${time}`, newEffect);
-            newEffect.connect(getMasterBus());
-
-            // Update health monitor
-            audioHealthMonitor.updateEffectCount(effects.size + getMasterEffectChain().length);
+            
+            // Connect instrument through the effect
+            if (playInstrument.disconnect && playInstrument.chain) {
+              playInstrument.disconnect();
+              playInstrument.chain(trackEffect, getMasterBus());
+            } else {
+              console.warn(`⚠️ Cannot apply effect to instrument ${track.instrument} - missing disconnect/chain methods`);
+            }
           }
         }
 
@@ -375,7 +431,9 @@ function cleanup() {
   });
   instruments.clear();
 
-  effects.forEach(effect => {
+  console.log(`🧹 Disposing ${effects.size} effects...`);
+  effects.forEach((effect, key) => {
+    console.log(`🗑️ Disposing effect: ${key}`);
     if (effect.dispose) {effect.dispose();}
   });
   effects.clear();
