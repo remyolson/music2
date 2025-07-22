@@ -151,7 +151,10 @@ export class MusicExpressionSystem {
       instrumentType: track.instrument
     });
     
-    velocityManager.connect(instrument);
+    // Only connect if instrument has valid inputs
+    if (instrument && typeof instrument.connect === 'function' && instrument.numberOfInputs > 0) {
+      velocityManager.connect(instrument);
+    }
     components.velocityManager = velocityManager;
     
     // Create articulation engine

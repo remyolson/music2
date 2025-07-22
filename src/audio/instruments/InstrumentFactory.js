@@ -727,7 +727,7 @@ export async function createInstrument(type, settings = {}) {
  * @returns {Object} Object containing instrument and effect chain
  */
 export async function createInstrumentWithEffects(track, getMasterBus) {
-  const instrument = createInstrument(track.instrument, track.settings);
+  const instrument = await createInstrument(track.instrument, track.settings);
   const effectChain = [];
 
   // Add gain stage to reduce individual instrument volumes

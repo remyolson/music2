@@ -32,6 +32,9 @@ let isPlaying = false;
 const effects = new Map();
 let harmonyCallback = null;
 
+// Prevent concurrent updates
+let isUpdating = false;
+
 // Track temporary effects that need cleanup
 const temporaryEffects = new Map();
 
@@ -78,28 +81,59 @@ function expandNotesWithRepeat(notes) {
 }
 
 export async function update(musicData) {
+  if (isUpdating) {
+    console.log('⏳ Update already in progress, skipping...');
+    return;
+  }
+  
+  isUpdating = true;
+  console.log('🔄 Update called with musicData:', {
+    tracks: musicData?.tracks?.length || 0,
+    tempo: musicData?.tempo,
+    hasData: !!musicData,
+    currentParts: parts.length,
+    currentInstruments: instruments.size
+  });
+
   // Stop transport if playing to avoid timing conflicts
   if (Tone.Transport.state === 'started') {
+    console.log('⏸️ Stopping transport for update');
     Tone.Transport.stop();
   }
 
+  // Always cleanup before creating new parts to prevent duplicates
   cleanup();
+  console.log('🧹 Cleanup complete, starting fresh');
 
-  if (!musicData || !musicData.tracks || !musicData.tempo) {return;}
+  if (!musicData || !musicData.tracks || !musicData.tempo) {
+    console.log('❌ Invalid musicData, aborting update');
+    isUpdating = false;
+    return;
+  }
 
   // Ensure tempo is a valid number
   const tempo = Math.max(60, Math.min(200, musicData.tempo || 120));
   Tone.Transport.bpm.value = tempo;
+  console.log(`🎵 Set tempo to ${tempo} BPM`);
 
   const secondsPerBeat = 60 / tempo;
+  
+  // Calculate loop end for the entire composition (all tracks)
+  const compositionLoopEnd = getLoopEnd(musicData) * secondsPerBeat;
+  console.log(`📏 Composition loop end: ${compositionLoopEnd} seconds (${getLoopEnd(musicData)} beats)`);
 
   for (let trackIndex = 0; trackIndex < musicData.tracks.length; trackIndex++) {
     const track = musicData.tracks[trackIndex];
+    console.log(`🎹 Processing track ${trackIndex}: "${track.name}" (${track.instrument}) with ${track.notes?.length || 0} notes`);
+    
     const { instrument, effectChain } = await createInstrumentWithEffects(track, getMasterBus);
     instruments.set(track.name, { instrument, effectChain });
+    console.log(`✅ Created instrument for ${track.name}, has triggerAttackRelease: ${typeof instrument.triggerAttackRelease === 'function'}`);
     
-    // Register track with expression system
-    await musicExpressionSystem.registerTrack(track.name, track, instrument);
+    // Register track with expression system (only for actual instruments, not effect chains)
+    if (instrument && typeof instrument.triggerAttackRelease === 'function') {
+      await musicExpressionSystem.registerTrack(track.name, track, instrument);
+    }
 
     const expandedNotes = expandNotesWithRepeat(track.notes);
 
@@ -139,16 +173,27 @@ export async function update(musicData) {
         genre: track.genre || 'natural'
       }) : partNotes;
 
+    const loopEndForCallback = compositionLoopEnd; // Capture in closure
     const part = new Tone.Part((time, note) => {
       try {
+        // Debug: Log note triggers with more detail
+        const loopCycle = Math.floor(time / loopEndForCallback);
+        const timeInLoop = time % loopEndForCallback;
+        console.log(`🎼 Note: ${track.name}, value=${note.value}, time=${time.toFixed(2)}s, loop=${loopCycle}, timeInLoop=${timeInLoop.toFixed(2)}s`);
+        
+        // Check if we're past the expected loop end
+        if (time > loopEndForCallback) {
+          console.log(`⚠️ Note scheduled beyond loop end! time=${time.toFixed(2)}s > loopEnd=${loopEndForCallback.toFixed(2)}s`);
+        }
+        
         // Validate note data
         if (!note || !note.value) {
-          console.error(`Invalid note in track ${track.name}:`, note);
+          console.error(`❌ Invalid note in track ${track.name}:`, note);
           return;
         }
 
         if (note.duration <= 0) {
-          console.error(`Invalid duration for note in track ${track.name}:`, note);
+          console.error(`❌ Invalid duration for note in track ${track.name}:`, note);
           return;
         }
 
@@ -277,9 +322,14 @@ export async function update(musicData) {
 
     part.trackIndex = trackIndex;
     part.loop = true;
-    part.loopEnd = getLoopEnd({ tracks: [track] }) * secondsPerBeat;
+    part.loopEnd = compositionLoopEnd;
     parts.push(part);
+    
+    console.log(`🎵 Created part for ${track.name}: ${part.length} events, loop=${part.loop}, loopEnd=${part.loopEnd}s`);
   }
+  
+  console.log(`✅ Update complete: ${parts.length} parts created, ${instruments.size} instruments`);
+  isUpdating = false;
 }
 
 // Instrument creation functions have been moved to InstrumentFactory.js
@@ -341,12 +391,22 @@ function cleanup() {
 }
 
 export async function play() {
-  if (isPlaying) {return;}
+  if (isPlaying) {
+    console.log('🔴 Play called but already playing');
+    return;
+  }
+
+  console.log('🎵 Starting playback...');
+  console.log(`📊 Parts available: ${parts.length}`);
+  console.log(`🎛️ Instruments: ${instruments.size}`);
+  console.log(`⚡ Effects: ${effects.size}`);
 
   // Ensure audio context is started
   if (Tone.context.state !== 'running') {
     await Tone.start();
-    console.log('Audio context started');
+    console.log('🔊 Audio context started');
+  } else {
+    console.log('🔊 Audio context already running');
   }
 
   // Initialize and start health monitoring
@@ -357,15 +417,39 @@ export async function play() {
   const totalEffects = effects.size + getMasterEffectChain().length + temporaryEffects.size;
   audioHealthMonitor.updateEffectCount(totalEffects);
 
-  parts.forEach(part => part.start(0));
+  console.log('🚀 Starting transport and parts...');
+  parts.forEach((part, index) => {
+    console.log(`▶️ Starting part ${index}: loop=${part.loop}, loopEnd=${part.loopEnd}s, events=${part.length}`);
+    part.start(0);
+  });
+  
   Tone.Transport.start();
+  console.log(`🎯 Transport started at BPM: ${Tone.Transport.bpm.value}`);
+  console.log(`⏰ Transport state: ${Tone.Transport.state}`);
   isPlaying = true;
+  
+  // Monitor transport position
+  const positionMonitor = setInterval(() => {
+    const position = Tone.Transport.position;
+    const seconds = Tone.Transport.seconds;
+    console.log(`🕐 Position: ${position} (${seconds.toFixed(2)}s) - Playing: ${isPlaying} - Transport: ${Tone.Transport.state}`);
+    
+    if (!isPlaying || Tone.Transport.state === 'stopped') {
+      clearInterval(positionMonitor);
+      console.log('⏹️ Position monitoring stopped');
+    }
+  }, 2000);
 }
 
 export function stop() {
+  console.log('🛑 Stop called');
+  console.trace('🔍 Stop call stack:');
+  console.log(`⏰ Transport state before stop: ${Tone.Transport.state}`);
+  
   Tone.Transport.stop();
   // Cancel any scheduled events to prevent dangling callbacks
   Tone.Transport.cancel(0);
+  console.log('🗑️ Transport stopped and events cancelled');
 
   // Stop health monitoring and generate report
   if (audioHealthMonitor.isMonitoring) {
@@ -373,12 +457,14 @@ export function stop() {
   }
 
   // Stop all parts so they can be restarted
-  parts.forEach(part => {
+  parts.forEach((part, index) => {
+    console.log(`⏹️ Stopping part ${index}`);
     part.stop();
   });
 
   // Immediately release all active notes to stop sound instantly
-  instruments.forEach(({ instrument }) => {
+  instruments.forEach(({ instrument }, name) => {
+    console.log(`🔇 Releasing notes for instrument: ${name}`);
     if (instrument.releaseAll) {
       // PolySynth has releaseAll
       instrument.releaseAll();
@@ -396,8 +482,10 @@ export function stop() {
       });
     }
   });
+  
   Tone.Transport.position = 0;
   isPlaying = false;
+  console.log(`✅ Stop complete. isPlaying: ${isPlaying}, Transport state: ${Tone.Transport.state}`);
 }
 
 export function getTransport() {

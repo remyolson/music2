@@ -351,6 +351,12 @@ export class VelocityManager {
    * @param {Tone.ToneNode} destination 
    */
   connect(destination) {
+    // Check if destination can be connected to
+    if (!destination || typeof destination.connect !== 'function' || destination.numberOfInputs === 0) {
+      console.warn('VelocityManager: Cannot connect to destination with no inputs');
+      return;
+    }
+    
     for (const layer of this.velocityLayers.values()) {
       layer.volume.connect(destination);
     }
