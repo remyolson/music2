@@ -2,6 +2,25 @@
  * Available instrument types
  */
 export const INSTRUMENT_TYPES = [
+  // Natural sample-based instruments
+  'natural_piano',
+  'orchestral_violin',
+  'orchestral_viola',
+  'orchestral_cello',
+  'orchestral_double_bass',
+  'orchestral_flute',
+  'orchestral_clarinet',
+  'orchestral_oboe',
+  'orchestral_bassoon',
+  'orchestral_saxophone',
+  'orchestral_trumpet',
+  'orchestral_french_horn',
+  'orchestral_trombone',
+  'orchestral_tuba',
+  'string_section',
+  'woodwind_section',
+  'brass_section',
+  // Original synthesized instruments
   'synth_lead',
   'synth_bass',
   'piano',
@@ -58,6 +77,111 @@ export const DRUM_DURATIONS = {
  * Instrument-specific default settings
  */
 export const INSTRUMENT_DEFAULTS = {
+  // Natural sample-based instruments
+  natural_piano: {
+    volume: -6,
+    maxPolyphony: 16,
+    pianoType: 'grand_piano',
+    resonance: 0.15,
+    hammerHardness: 0.8,
+    pedals: { sustain: false, soft: false, sostenuto: false }
+  },
+  orchestral_violin: {
+    volume: -6,
+    maxPolyphony: 8,
+    articulation: 'arco',
+    vibrato: { rate: 5, depth: 0.1 },
+    bowPressure: 0.5
+  },
+  orchestral_viola: {
+    volume: -6,
+    maxPolyphony: 8,
+    articulation: 'arco',
+    vibrato: { rate: 5, depth: 0.1 },
+    bowPressure: 0.5
+  },
+  orchestral_cello: {
+    volume: -6,
+    maxPolyphony: 8,
+    articulation: 'arco',
+    vibrato: { rate: 5, depth: 0.1 },
+    bowPressure: 0.5
+  },
+  orchestral_double_bass: {
+    volume: -6,
+    maxPolyphony: 8,
+    articulation: 'arco',
+    vibrato: { rate: 5, depth: 0.1 },
+    bowPressure: 0.5
+  },
+  orchestral_flute: {
+    volume: -6,
+    maxPolyphony: 1,
+    technique: 'normal',
+    breath: { amount: 0.15, pressure: 1.0 },
+    embouchure: 0.5
+  },
+  orchestral_clarinet: {
+    volume: -6,
+    maxPolyphony: 1,
+    technique: 'normal',
+    breath: { amount: 0.08, pressure: 1.0 },
+    embouchure: 0.5
+  },
+  orchestral_oboe: {
+    volume: -6,
+    maxPolyphony: 1,
+    technique: 'normal',
+    breath: { amount: 0.05, pressure: 1.0 },
+    embouchure: 0.5
+  },
+  orchestral_bassoon: {
+    volume: -6,
+    maxPolyphony: 1,
+    technique: 'normal',
+    breath: { amount: 0.12, pressure: 1.0 },
+    embouchure: 0.5
+  },
+  orchestral_saxophone: {
+    volume: -6,
+    maxPolyphony: 1,
+    technique: 'normal',
+    breath: { amount: 0.1, pressure: 1.0 },
+    embouchure: 0.5
+  },
+  orchestral_trumpet: {
+    volume: -4,
+    maxPolyphony: 1,
+    mute: 'open',
+    lipTension: 0.7,
+    airPressure: 1.0,
+    brightness: 1.0
+  },
+  orchestral_french_horn: {
+    volume: -4,
+    maxPolyphony: 2,
+    mute: 'open',
+    lipTension: 0.5,
+    airPressure: 1.0,
+    brightness: 0.6
+  },
+  orchestral_trombone: {
+    volume: -4,
+    maxPolyphony: 1,
+    mute: 'open',
+    lipTension: 0.6,
+    airPressure: 1.0,
+    brightness: 0.7
+  },
+  orchestral_tuba: {
+    volume: -4,
+    maxPolyphony: 1,
+    mute: 'open',
+    lipTension: 0.3,
+    airPressure: 1.0,
+    brightness: 0.4
+  },
+
   // Synth instruments
   synth_lead: {
     oscillator: { type: 'sawtooth' },

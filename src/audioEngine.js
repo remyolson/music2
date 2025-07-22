@@ -23,6 +23,7 @@ import {
   applyMasterEffectPreset as applyMasterEffectPresetModule,
   getMasterEffectChain
 } from './audio/core/MasterBus.js';
+import { musicExpressionSystem } from './audio/dynamics/MusicExpressionSystem.js';
 
 const instruments = new Map();
 let parts = [];
@@ -35,6 +36,9 @@ const temporaryEffects = new Map();
 
 // Initialize performance optimizer
 performanceOptimizer.initialize().catch(console.warn);
+
+// Initialize music expression system
+musicExpressionSystem.initialize().catch(console.warn);
 
 function expandNotesWithRepeat(notes) {
   const expanded = [];
@@ -87,6 +91,9 @@ export async function update(musicData) {
     const track = musicData.tracks[trackIndex];
     const { instrument, effectChain } = await createInstrumentWithEffects(track, getMasterBus);
     instruments.set(track.name, { instrument, effectChain });
+    
+    // Register track with expression system
+    await musicExpressionSystem.registerTrack(track.name, track, instrument);
 
     const expandedNotes = expandNotesWithRepeat(track.notes);
 
@@ -279,6 +286,11 @@ function cleanup() {
     part.dispose();
   });
   parts = [];
+  
+  // Unregister tracks from expression system
+  for (const trackName of instruments.keys()) {
+    musicExpressionSystem.unregisterTrack(trackName);
+  }
 
   instruments.forEach(({ instrument, effectChain }) => {
     if (effectChain) {

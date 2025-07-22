@@ -17,13 +17,19 @@ import {
   getCacheStats 
 } from './LazyInstrumentLoader.js';
 
+// Import natural instrument definitions
+import naturalPiano from './definitions/naturalPiano.js';
+import { violin, viola, cello, doubleBass, stringSection } from './definitions/orchestralStrings.js';
+import { flute, clarinet, oboe, bassoon, saxophone, woodwindSection } from './definitions/orchestralWinds.js';
+import { trumpet, frenchHorn, trombone, tuba, brassSection } from './definitions/orchestralBrass.js';
+
 /**
  * Creates an instrument based on type and settings
  * @param {string} type - Instrument type
  * @param {Object} settings - Instrument settings
- * @returns {Tone.Instrument} The created instrument
+ * @returns {Promise<Tone.Instrument>} The created instrument
  */
-export function createInstrument(type, settings = {}) {
+export async function createInstrument(type, settings = {}) {
   const envelope = settings?.envelope || {};
   const noteTransition = settings?.noteTransition || 'normal';
   const portamentoTime = settings?.portamento || 0;
@@ -32,6 +38,59 @@ export function createInstrument(type, settings = {}) {
   const transitionSettings = TRANSITION_PRESETS[noteTransition] || {};
 
   switch (type) {
+    // Natural Instruments with Sample Support
+    case 'natural_piano':
+      return await naturalPiano.create(settings);
+
+    case 'orchestral_violin':
+      return await violin.create(settings);
+      
+    case 'orchestral_viola':
+      return await viola.create(settings);
+      
+    case 'orchestral_cello':
+      return await cello.create(settings);
+      
+    case 'orchestral_double_bass':
+      return await doubleBass.create(settings);
+
+    case 'orchestral_flute':
+      return await flute.create(settings);
+      
+    case 'orchestral_clarinet':
+      return await clarinet.create(settings);
+      
+    case 'orchestral_oboe':
+      return await oboe.create(settings);
+      
+    case 'orchestral_bassoon':
+      return await bassoon.create(settings);
+      
+    case 'orchestral_saxophone':
+      return await saxophone.create(settings);
+
+    case 'orchestral_trumpet':
+      return await trumpet.create(settings);
+      
+    case 'orchestral_french_horn':
+      return await frenchHorn.create(settings);
+      
+    case 'orchestral_trombone':
+      return await trombone.create(settings);
+      
+    case 'orchestral_tuba':
+      return await tuba.create(settings);
+
+    case 'string_section':
+      return await stringSection.create(settings);
+      
+    case 'woodwind_section':
+      return await woodwindSection.create(settings);
+      
+    case 'brass_section':
+      return await brassSection.create(settings);
+
+    // Original Synthesized Instruments
     case 'synth_lead':
       return new Tone.Synth({
         oscillator: { type: 'sawtooth' },
