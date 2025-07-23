@@ -587,6 +587,21 @@ export class SampleLibrary {
       play: (note, velocity, time, duration) => {
         synth.triggerAttackRelease(note, duration, time, velocity / 127);
       },
+      triggerAttackRelease: (note, duration, time, velocity) => {
+        synth.triggerAttackRelease(note, duration, time, velocity / 127);
+      },
+      triggerAttack: (note, time, velocity) => {
+        synth.triggerAttack(note, time, velocity / 127);
+      },
+      triggerRelease: (note, time) => {
+        synth.triggerRelease(note, time);
+      },
+      setArticulation: () => {}, // No-op for fallback
+      addVibrato: () => {}, // No-op for fallback
+      chain: (...effects) => synth.chain(...effects),
+      connect: (destination) => synth.connect(destination),
+      disconnect: () => synth.disconnect(),
+      toDestination: () => synth.toDestination(),
       dispose: () => synth.dispose()
     };
   }

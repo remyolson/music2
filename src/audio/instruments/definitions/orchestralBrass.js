@@ -206,7 +206,7 @@ function createBrassInstrument(instrumentType) {
         sectionBlend: 0.0, // 0 = solo, 1 = full blend
         
         // Enhanced playing methods
-        play: (notes, velocity = 100, time = '+0', duration = '4n') => {
+        play: function(notes, velocity = 100, time = '+0', duration = '4n') {
           const noteArray = Array.isArray(notes) ? notes : [notes];
           const muteSettings = BRASS_MUTES[this.currentMute];
           
@@ -234,7 +234,7 @@ function createBrassInstrument(instrumentType) {
           }
         },
 
-        triggerAttack: (notes, time = '+0', velocity = 100) => {
+        triggerAttack: function(notes, time = '+0', velocity = 100) {
           const noteArray = Array.isArray(notes) ? notes : [notes];
           const muteSettings = BRASS_MUTES[this.currentMute];
           
@@ -254,7 +254,7 @@ function createBrassInstrument(instrumentType) {
           }
         },
 
-        triggerRelease: (notes, time = '+0') => {
+        triggerRelease: function(notes, time = '+0') {
           const noteArray = Array.isArray(notes) ? notes : [notes];
           
           lipBuzzEnv.triggerRelease(time);
@@ -283,7 +283,7 @@ function createBrassInstrument(instrumentType) {
           }
         },
 
-        getAvailableMutes: () => {
+        getAvailableMutes: function() {
           // Return mutes appropriate for this instrument
           const allMutes = Object.keys(BRASS_MUTES);
           
@@ -297,31 +297,31 @@ function createBrassInstrument(instrumentType) {
         },
 
         // Expression controls
-        setLipTension: (tension) => {
+        setLipTension: function(tension) {
           this.lipTension = Math.max(0.1, Math.min(1.5, tension));
           lipBuzz.frequency.value = 220 * this.lipTension;
           lipBuzzGain.gain.value = 0.02 * this.lipTension;
         },
 
-        setAirPressure: (pressure) => {
+        setAirPressure: function(pressure) {
           this.airPressure = Math.max(0.3, Math.min(2.0, pressure));
           muteGain.gain.value = BRASS_MUTES[this.currentMute].volume * this.airPressure;
         },
 
-        setBrightness: (brightness) => {
+        setBrightness: function(brightness) {
           this.brightness = Math.max(0.1, Math.min(2.0, brightness));
           const highGain = Math.log(this.brightness + 1) * 3; // Logarithmic scaling
           brightnessEQ.high.value = highGain;
         },
 
-        setSectionBlend: (blend) => {
+        setSectionBlend: function(blend) {
           this.sectionBlend = Math.max(0, Math.min(1, blend));
           sectionDelay.delayTime.value = this.sectionBlend * 0.002; // Max 2ms delay
           sectionGain.gain.value = 0.8 + (this.sectionBlend * 0.2); // Slight volume boost in ensemble
         },
 
         // Advanced brass techniques
-        playLipTrill: (fundamentalNote, semitones = 1, rate = 8, duration = '2n', time = '+0') => {
+        playLipTrill: function(fundamentalNote, semitones = 1, rate = 8, duration = '2n', time = '+0') {
           const trillNote = Tone.Frequency(fundamentalNote).transpose(semitones * 100).toNote();
           
           const trillInterval = 1 / (rate * 2); // Alternate between notes
@@ -334,7 +334,7 @@ function createBrassInstrument(instrumentType) {
           }
         },
 
-        playGlissando: (startNote, endNote, duration = '1n', time = '+0') => {
+        playGlissando: function(startNote, endNote, duration = '1n', time = '+0') {
           // For trombone, use slide positions; for others, simulate with pitch bend
           if (instrumentType === 'trombone') {
             // Smooth trombone slide
@@ -370,7 +370,7 @@ function createBrassInstrument(instrumentType) {
           }
         },
 
-        playFallOff: (startNote, duration = '1n', time = '+0') => {
+        playFallOff: function(startNote, duration = '1n', time = '+0') {
           // Brass fall-off effect
           this.triggerAttack(startNote, time);
           
@@ -388,7 +388,7 @@ function createBrassInstrument(instrumentType) {
         },
 
         // Internal helper methods
-        _applyMuteSettings(muteSettings) {
+        _applyMuteSettings: function(muteSettings) {
           muteGain.gain.value = muteSettings.volume * this.airPressure;
           
           if (muteSettings.filterFreq) {
@@ -405,7 +405,7 @@ function createBrassInstrument(instrumentType) {
           brightnessEQ.high.value = highGain;
         },
 
-        _calculateBrassVelocity(velocity, note) {
+        _calculateBrassVelocity: function(velocity, note) {
           // Brass instruments are harder to play in extreme registers
           const noteFreq = Tone.Frequency(note).toFrequency();
           const rangeMin = Tone.Frequency(config.range.min).toFrequency();
@@ -421,34 +421,34 @@ function createBrassInstrument(instrumentType) {
         },
 
         // Information methods
-        getConfig: () => config,
-        getCurrentMute: () => this.currentMute,
-        getRange: () => config.range,
-        isSampleBased: () => true,
+        getConfig: function() { return config; },
+        getCurrentMute: function() { return this.currentMute; },
+        getRange: function() { return config.range; },
+        isSampleBased: function() { return true; },
 
         // Standard Tone.js interface
-        chain: (...effects) => {
+        chain: function(...effects) {
           sectionDelay.chain(...effects);
           return this;
         },
 
-        connect: (destination) => {
+        connect: function(destination) {
           sectionDelay.connect(destination);
           return this;
         },
 
-        disconnect: () => {
+        disconnect: function() {
           sectionDelay.disconnect();
           return this;
         },
 
-        toDestination: () => {
+        toDestination: function() {
           sectionDelay.toDestination();
           return this;
         },
 
         // Memory management
-        dispose: () => {
+        dispose: function() {
           if (orchestralBrass.dispose) {
             orchestralBrass.dispose();
           }

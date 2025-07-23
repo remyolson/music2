@@ -139,6 +139,23 @@ export class SoundFontLoader {
         // No-op for basic synth
       };
       
+      // Add Tone.js interface methods
+      fallbackSynth.chain = function(...effects) {
+        return this.connect(...effects);
+      };
+      
+      fallbackSynth.connect = function(destination) {
+        return Tone.PolySynth.prototype.connect.call(this, destination);
+      };
+      
+      fallbackSynth.disconnect = function() {
+        return Tone.PolySynth.prototype.disconnect.call(this);
+      };
+      
+      fallbackSynth.toDestination = function() {
+        return Tone.PolySynth.prototype.toDestination.call(this);
+      };
+      
       return fallbackSynth;
     }
 
@@ -164,6 +181,23 @@ export class SoundFontLoader {
       
       fallbackSynth.addVibrato = function(rate, depth) {
         // No-op for basic synth
+      };
+      
+      // Add Tone.js interface methods
+      fallbackSynth.chain = function(...effects) {
+        return this.connect(...effects);
+      };
+      
+      fallbackSynth.connect = function(destination) {
+        return Tone.PolySynth.prototype.connect.call(this, destination);
+      };
+      
+      fallbackSynth.disconnect = function() {
+        return Tone.PolySynth.prototype.disconnect.call(this);
+      };
+      
+      fallbackSynth.toDestination = function() {
+        return Tone.PolySynth.prototype.toDestination.call(this);
       };
       
       return fallbackSynth;

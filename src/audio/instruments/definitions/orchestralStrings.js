@@ -200,7 +200,7 @@ function createStringInstrument(instrumentType) {
           bowEnvelope.triggerRelease(time);
         },
 
-        triggerAttackRelease: (notes, duration, time = '+0', velocity = 100) => {
+        triggerAttackRelease: function(notes, duration, time = '+0', velocity = 100) {
           const noteArray = Array.isArray(notes) ? notes : [notes];
           const articulationSettings = ARTICULATIONS[this.currentArticulation];
           
@@ -209,15 +209,26 @@ function createStringInstrument(instrumentType) {
           }
           
           for (const note of noteArray) {
+            // Convert frequency to note name if needed
+            let noteToPlay = note;
+            if (typeof note === 'number') {
+              try {
+                noteToPlay = Tone.Frequency(note).toNote();
+              } catch (error) {
+                console.warn(`Could not convert frequency ${note} to note:`, error);
+                continue;
+              }
+            }
+            
             if (orchestralStrings && orchestralStrings.setArticulation) {
               orchestralStrings.setArticulation(this.currentArticulation);
             }
             if (orchestralStrings && orchestralStrings.sampler && orchestralStrings.sampler.triggerAttackRelease) {
-              orchestralStrings.sampler.triggerAttackRelease(note, duration, time, velocity / 127);
+              orchestralStrings.sampler.triggerAttackRelease(noteToPlay, duration, time, velocity / 127);
             } else if (orchestralStrings && orchestralStrings.triggerAttackRelease) {
-              orchestralStrings.triggerAttackRelease(note, duration, time, velocity / 127);
+              orchestralStrings.triggerAttackRelease(noteToPlay, duration, time, velocity / 127);
             } else {
-              console.warn(`Orchestra strings missing triggerAttackRelease for note: ${note}`);
+              console.warn(`Orchestra strings missing triggerAttackRelease for note: ${noteToPlay}`);
             }
           }
         },
