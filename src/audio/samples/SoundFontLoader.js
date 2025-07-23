@@ -116,6 +116,32 @@ export class SoundFontLoader {
       }
     });
 
+    // Check if sample URLs are actual URLs (not placeholders)
+    const hasValidUrls = Object.values(cleanSamples).some(url => {
+      return url && typeof url === 'string' && (url.startsWith('http') || url.startsWith('data:') || url.startsWith('blob:'));
+    });
+
+    if (!hasValidUrls) {
+      console.warn('No valid sample URLs found, using synthesis fallback');
+      // Return a simple PolySynth as fallback with enhanced interface
+      const fallbackSynth = this.registry.register(new Tone.PolySynth(Tone.Synth));
+      
+      // Add missing methods that orchestral instruments expect
+      fallbackSynth.play = function(note, velocity = 100, time = '+0', duration = '4n') {
+        this.triggerAttackRelease(note, duration, time, velocity / 127);
+      };
+      
+      fallbackSynth.setArticulation = function(articulation) {
+        // No-op for basic synth
+      };
+      
+      fallbackSynth.addVibrato = function(rate, depth) {
+        // No-op for basic synth
+      };
+      
+      return fallbackSynth;
+    }
+
     // Ensure no null/undefined values in the final options
     const samplerOptions = { ...cleanOptions, urls: cleanSamples };
     
@@ -151,13 +177,20 @@ export class SoundFontLoader {
    * @returns {Object} Multi-velocity sampler system
    */
   createMultiVelocitySampler(velocityLayers, options = {}) {
+    // Validate input
+    if (!velocityLayers || typeof velocityLayers !== 'object' || Object.keys(velocityLayers).length === 0) {
+      console.warn('Invalid velocity layers, creating simple fallback synthesizer');
+      return this.registry.register(new Tone.PolySynth(Tone.Synth));
+    }
+
     const samplers = {};
     const velocityRanges = this._calculateVelocityRanges(Object.keys(velocityLayers));
 
     for (const [velocityKey, samples] of Object.entries(velocityLayers)) {
+      const volumeValue = this._getVelocityVolume(velocityKey);
       samplers[velocityKey] = this.createSampler(samples, {
         ...options,
-        volume: this._getVelocityVolume(velocityKey)
+        volume: volumeValue
       });
     }
 
@@ -337,7 +370,13 @@ export class SoundFontLoader {
 
   _getVelocityVolume(velocityKey) {
     // Extract velocity number from key like 'v1', 'v2', etc.
+    if (!velocityKey || typeof velocityKey !== 'string') {
+      return -12; // Default volume
+    }
     const velocityNum = parseInt(velocityKey.replace('v', ''));
+    if (isNaN(velocityNum)) {
+      return -12; // Default volume  
+    }
     return -12 + (velocityNum - 1) * 4; // dB scaling
   }
 }

@@ -182,8 +182,15 @@ function createBrassInstrument(instrumentType) {
       const sectionGain = registry.register(new Tone.Gain(1.0));
       const sectionDelay = registry.register(new Tone.Delay(0.001)); // Slight ensemble delay
       
-      // Main audio chain
-      orchestralBrass.chain(muteGain, muteFilter, muteResonance, brightnessEQ, sectionGain, sectionDelay, Tone.Destination);
+      // Main audio chain - check if chain method exists
+      if (orchestralBrass && orchestralBrass.chain) {
+        orchestralBrass.chain(muteGain, muteFilter, muteResonance, brightnessEQ, sectionGain, sectionDelay, Tone.Destination);
+      } else if (orchestralBrass && orchestralBrass.connect) {
+        // Fallback: connect directly without effect chain
+        orchestralBrass.connect(Tone.Destination);
+      } else {
+        console.warn('Orchestral brass missing both chain and connect methods');
+      }
 
       return {
         type: `orchestral_${instrumentType}`,

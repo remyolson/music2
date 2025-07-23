@@ -368,16 +368,18 @@ export class SampleLibrary {
   }
 
   async _generateStringSamples(config) {
+    // Generate velocity-based samples for the default articulation
     const samples = {};
     const notes = this._generateNoteRange(config.noteRange.min, config.noteRange.max);
+    const defaultArticulation = config.articulations[0] || 'arco';
     
-    for (const articulation of config.articulations) {
-      samples[articulation] = {};
+    // Create velocity layers structure expected by createMultiVelocitySampler
+    for (let v = 1; v <= config.velocityLayers; v++) {
+      const velocityKey = `v${v}`;
+      samples[velocityKey] = {};
       for (const note of notes) {
-        samples[articulation][note] = {};
-        for (let v = 1; v <= config.velocityLayers; v++) {
-          samples[articulation][note][`v${v}`] = `${articulation}_${note}_v${v}.wav`;
-        }
+        // Use placeholder URLs - in production these would be actual sample URLs
+        samples[velocityKey][note] = `${defaultArticulation}_${note}_v${v}.wav`;
       }
     }
     
