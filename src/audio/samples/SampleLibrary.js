@@ -546,7 +546,7 @@ export class SampleLibrary {
         synth = this._createFallbackStrings(instrument);
         break;
       default:
-        synth = this.registry.register(new Tone.PolySynth());
+        synth = this._createGenericFallback(category, instrument);
     }
     
     this.fallbackSynths.set(key, synth);
@@ -569,6 +569,48 @@ export class SampleLibrary {
       play: (note, velocity, time, duration) => {
         synth.triggerAttackRelease(note, duration, time, velocity / 127);
       },
+      triggerAttackRelease: (note, duration, time, velocity) => {
+        synth.triggerAttackRelease(note, duration, time, velocity / 127);
+      },
+      triggerAttack: (note, time, velocity) => {
+        synth.triggerAttack(note, time, velocity / 127);
+      },
+      triggerRelease: (note, time) => {
+        synth.triggerRelease(note, time);
+      },
+      chain: (...effects) => synth.chain(...effects),
+      connect: (destination) => synth.connect(destination),
+      disconnect: () => synth.disconnect(),
+      toDestination: () => synth.toDestination(),
+      dispose: () => synth.dispose()
+    };
+  }
+
+  _createGenericFallback(category, instrument) {
+    // Create generic fallback with complete interface
+    const synth = this.registry.register(new Tone.PolySynth());
+
+    return {
+      synth,
+      play: (note, velocity, time, duration) => {
+        synth.triggerAttackRelease(note, duration, time, velocity / 127);
+      },
+      triggerAttackRelease: (note, duration, time, velocity) => {
+        synth.triggerAttackRelease(note, duration, time, velocity / 127);
+      },
+      triggerAttack: (note, time, velocity) => {
+        synth.triggerAttack(note, time, velocity / 127);
+      },
+      triggerRelease: (note, time) => {
+        synth.triggerRelease(note, time);
+      },
+      setArticulation: () => {}, // No-op for fallback
+      setMute: () => {}, // No-op for fallback
+      addVibrato: () => {}, // No-op for fallback
+      chain: (...effects) => synth.chain(...effects),
+      connect: (destination) => synth.connect(destination),
+      disconnect: () => synth.disconnect(),
+      toDestination: () => synth.toDestination(),
       dispose: () => synth.dispose()
     };
   }

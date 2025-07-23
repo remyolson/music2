@@ -220,6 +220,12 @@ function createStringInstrument(instrumentType) {
               }
             }
             
+            // Validate note is a string
+            if (typeof noteToPlay !== 'string') {
+              console.warn(`Invalid note type: ${typeof noteToPlay}, value: ${noteToPlay}`);
+              continue;
+            }
+            
             if (orchestralStrings && orchestralStrings.setArticulation) {
               orchestralStrings.setArticulation(this.currentArticulation);
             }
