@@ -23,7 +23,9 @@
     "find:leaks": "grep -r 'addEventListener\\|setInterval\\|setTimeout\\|new Tone' src/ --include='*.js' | grep -v dispose",
     "find:todos": "grep -r 'TODO\\|FIXME\\|XXX' src/ --include='*.js'",
     "prepare": "husky install",
-    "setup": "npm ci && npm run test"
+    "setup": "npm ci && npm run test",
+    "deploy": "npm run build && vercel deploy",
+    "deploy:prod": "npm run build && vercel deploy --prod"
   },
   "keywords": [],
   "author": "",
